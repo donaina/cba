@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: core-banking-app
+    runtime: docker
+    dockerfilePath: ./core-banking-app/Dockerfile
+    dockerContext: ./core-banking-app
+    plan: free
+    healthCheckPath: /health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cba-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: RABBITMQ_URL
+        sync: false   # paste your CloudAMQP URL here
+      - key: MINIO_ENDPOINT
+        sync: false   # paste your MinIO / S3 endpoint here
+      - key: MINIO_PORT
+        value: "9000"
+      - key: MINIO_USE_SSL
+        value: "true"
+      - key: MINIO_ACCESS_KEY
+        sync: false
+      - key: MINIO_SECRET_KEY
+        sync: false
+      - key: MINIO_BUCKET
+        value: core-banking
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/chromium-browser
+      - key: TERMII_SANDBOX
+        value: "true"
+      - key: SENDGRID_SANDBOX
+        value: "true"
+      - key: NIBSS_SANDBOX
+        value: "true"
+      - key: CREDIT_BUREAU_SANDBOX
+        value: "true"
+
+databases:
+  - name: cba-postgres
+    plan: free
+    databaseName: cba
+    user: cba_app
