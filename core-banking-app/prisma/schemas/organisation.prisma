@@ -1,0 +1,59 @@
+// ── Organisation & Branch ────────────────────────────────────────────────────
+
+model Organisation {
+  id              String    @id @default(uuid())
+  name            String
+  shortName       String
+  tenantCode      String    @unique
+  currencyCode    String    @default("NGN")
+  countryCode     String    @default("NG")
+  address         String?
+  rcNumber        String?
+  cbLicenceNumber String?
+  sortCode        String?   // 3-digit CBN sort code for NUBAN generation
+
+  // Branding
+  logoObjectKey   String?   // MinIO key: branding/{tenantId}/logo-{uuid}.{ext}
+  logoMimeType    String?
+  logoUpdatedAt   DateTime?
+
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  branches        Branch[]
+  users           User[]
+  customers       Customer[]
+  accounts        Account[]
+  glAccounts      GLAccount[]
+  products        Product[]
+  amlScreenings   AmlScreening[]
+  amlAlerts       AmlAlert[]
+  strReports      SuspiciousTransactionReport[]
+}
+
+model Branch {
+  id          String      @id @default(uuid())
+  tenantId    String
+  name        String
+  code        String
+  branchType  BranchType  @default(BRANCH)
+  address     String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  tenant      Organisation @relation(fields: [tenantId], references: [id])
+  accounts    Account[]
+  users       UserBranchAccess[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+enum BranchType {
+  HEAD_OFFICE
+  BRANCH
+  AGENCY
+}

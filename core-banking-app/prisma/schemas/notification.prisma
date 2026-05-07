@@ -1,0 +1,47 @@
+// ── Notifications ────────────────────────────────────────────────────────────
+
+enum NotificationChannel {
+  SMS
+  EMAIL
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+}
+
+model NotificationLog {
+  id           String              @id @default(uuid())
+  tenantId     String
+  customerId   String?
+  channel      NotificationChannel
+  templateKey  String
+  recipient    String              // phone or email
+  content      String              @db.Text
+  status       NotificationStatus  @default(PENDING)
+  providerRef  String?             // Termii/SendGrid message ID
+  errorMessage String?
+  sentAt       DateTime?
+  createdAt    DateTime            @default(now())
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, status])
+}
+
+model NotificationTemplate {
+  id          String   @id @default(uuid())
+  tenantId    String
+  key         String   // e.g. DEPOSIT_ALERT, LOAN_DISBURSEMENT
+  channel     NotificationChannel
+  subject     String?  // email subject
+  body        String   @db.Text  // template with {{variable}} placeholders
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, key, channel])
+  @@index([tenantId])
+}

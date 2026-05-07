@@ -1,0 +1,67 @@
+// ── Account (Savings, Current, FD all use this base) ────────────────────────
+
+enum AccountType {
+  SAVINGS
+  CURRENT
+  FIXED_DEPOSIT
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  FROZEN
+  DORMANT
+  CLOSED
+}
+
+model Account {
+  id               String        @id @default(uuid())
+  tenantId         String
+  customerId       String
+  productId        String
+  branchId         String
+  accountNumber    String        // 10-digit NUBAN
+  accountType      AccountType
+  status           AccountStatus @default(ACTIVE)
+  currencyCode     String        @default("NGN")
+
+  // Balances (all Decimal — never floats)
+  currentBalance   Decimal       @db.Decimal(20, 4) @default(0)
+  availableBalance Decimal       @db.Decimal(20, 4) @default(0)
+  ledgerBalance    Decimal       @db.Decimal(20, 4) @default(0)
+
+  // Freeze (AML)
+  isFrozen         Boolean       @default(false)
+  frozenAt         DateTime?
+  frozenNote       String?
+  unfrozenAt       DateTime?
+  unfrozenNote     String?
+  unfrozenBy       String?
+
+  // Dormancy
+  lastTransactionAt DateTime?
+
+  closedAt         DateTime?
+  closedBy         String?
+  closureReason    String?
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  tenant           Organisation  @relation(fields: [tenantId], references: [id])
+  customer         Customer      @relation(fields: [customerId], references: [id])
+  product          Product       @relation(fields: [productId], references: [id])
+  branch           Branch        @relation(fields: [branchId], references: [id])
+
+  // Sub-account details (one of these will be populated based on accountType)
+  fixedDepositDetails FixedDepositDetails?
+  loanAccount         LoanAccount?
+  overdraftFacility   OverdraftFacility?
+  chequeBooks         ChequeBook[]
+  transactionEntries  TransactionEntry[]
+
+  @@unique([tenantId, accountNumber])
+  @@index([tenantId, customerId])
+  @@index([tenantId, status])
+  @@index([tenantId, accountType])
+}

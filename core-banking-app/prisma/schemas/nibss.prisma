@@ -1,0 +1,58 @@
+// ── NIBSS / NIP ──────────────────────────────────────────────────────────────
+
+enum NibssSessionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum RegulatoryReportType {
+  CTR   // Currency Transaction Report (≥ ₦5,000,000)
+  STR   // Suspicious Transaction Report
+}
+
+enum RegulatoryReportStatus {
+  PENDING
+  SUBMITTED
+  ACKNOWLEDGED
+}
+
+model NibssSession {
+  id              String              @id @default(uuid())
+  tenantId        String
+  sessionId       String              // NIBSS-assigned session ID (idempotency key for inward)
+  direction       String              // OUTWARD | INWARD
+  amount          Decimal             @db.Decimal(20, 4)
+  senderAccount   String?
+  beneficiaryAccount String?
+  beneficiaryBank String?
+  narration       String?
+  status          NibssSessionStatus  @default(PENDING)
+  nibssResponse   Json?
+  transactionId   String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([tenantId, sessionId])
+  @@index([tenantId, status])
+}
+
+model RegulatoryReport {
+  id            String                 @id @default(uuid())
+  tenantId      String
+  reportType    RegulatoryReportType
+  transactionId String?
+  customerId    String?
+  amount        Decimal?               @db.Decimal(20, 4)
+  narrative     String?
+  status        RegulatoryReportStatus @default(PENDING)
+  submittedAt   DateTime?
+  refNumber     String?                // NFIC/CBN reference
+  reportData    Json?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([tenantId, reportType])
+  @@index([tenantId, status])
+}

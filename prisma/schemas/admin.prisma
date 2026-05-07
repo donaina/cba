@@ -1,0 +1,72 @@
+// ── Admin / Configuration ────────────────────────────────────────────────────
+
+enum TaxType {
+  VAT
+  WHT
+  STAMP_DUTY
+}
+
+model TaxConfiguration {
+  id            String   @id @default(uuid())
+  tenantId      String
+  taxType       TaxType
+  rate          Decimal  @db.Decimal(10, 6)  // e.g. 0.075 = 7.5%
+  effectiveDate DateTime
+  expiryDate    DateTime?
+  isActive      Boolean  @default(true)
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId, taxType, isActive])
+}
+
+model WorkingCalendar {
+  id          String   @id @default(uuid())
+  tenantId    String
+  date        DateTime @db.Date
+  description String?
+  isHoliday   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([tenantId, date])
+  @@index([tenantId, isHoliday])
+}
+
+model MakerCheckerConfig {
+  id                    String   @id @default(uuid())
+  tenantId              String
+  module                String   // e.g. TRANSACTIONS
+  action                String   // e.g. CASH_WITHDRAWAL
+  requiresApprovalAbove Decimal? @db.Decimal(20, 4)
+  channels              String[] // ["OTC", "MOBILE"]
+  requiredApprovers     Int      @default(1)
+  ttlMinutes            Int      @default(60)
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([tenantId, module, action])
+  @@index([tenantId])
+}
+
+model MakerCheckerRequest {
+  id            String   @id @default(uuid())
+  tenantId      String
+  module        String
+  action        String
+  transactionId String?
+  payload       Json
+  initiatedBy   String
+  approvedBy    String?
+  rejectedBy    String?
+  status        String   @default("PENDING_APPROVAL")  // PENDING_APPROVAL | APPROVED | REJECTED | EXPIRED
+  expiresAt     DateTime
+  processedAt   DateTime?
+  rejectionNote String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, transactionId])
+}

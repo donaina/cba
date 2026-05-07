@@ -1,0 +1,41 @@
+// ── Current Account extras ───────────────────────────────────────────────────
+
+model OverdraftFacility {
+  id              String   @id @default(uuid())
+  tenantId        String
+  accountId       String   @unique
+  limit           Decimal  @db.Decimal(20, 4)
+  interestRate    Decimal  @db.Decimal(10, 6)  // annual rate
+  utilisedAmount  Decimal  @db.Decimal(20, 4) @default(0)
+  isActive        Boolean  @default(true)
+  expiryDate      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  account         Account  @relation(fields: [accountId], references: [id])
+
+  @@index([tenantId, accountId])
+}
+
+enum ChequeBookStatus {
+  ACTIVE
+  EXHAUSTED
+  CANCELLED
+}
+
+model ChequeBook {
+  id            String           @id @default(uuid())
+  tenantId      String
+  accountId     String
+  startLeaf     Int
+  endLeaf       Int
+  currentLeaf   Int
+  status        ChequeBookStatus @default(ACTIVE)
+  issuedAt      DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  account       Account @relation(fields: [accountId], references: [id])
+
+  @@index([tenantId, accountId])
+}

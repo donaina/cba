@@ -1,0 +1,22 @@
+// ── Audit Log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  tenantId     String?
+  userId       String?
+  sessionId    String?
+  ipAddress    String?
+  userAgent    String?
+  method       String   // POST | PATCH | DELETE
+  path         String
+  statusCode   Int
+  durationMs   Int
+  // Sensitive fields are redacted before storage (password, pin, otp, bvn, nin)
+  requestBody  Json?
+  responseCode String?  // business-level code e.g. TXN_COMPLETED
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, userId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, path])
+}

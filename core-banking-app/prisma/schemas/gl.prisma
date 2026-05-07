@@ -1,0 +1,125 @@
+// ── General Ledger ───────────────────────────────────────────────────────────
+
+enum GlAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+enum GlAccountLevel {
+  CATEGORY
+  HEADER
+  SUB_HEADER
+  DETAIL       // only DETAIL accounts accept postings via PostingEngine
+}
+
+enum NormalBalance {
+  DEBIT
+  CREDIT
+}
+
+enum EntryType {
+  DEBIT
+  CREDIT
+}
+
+enum TransactionStatus {
+  PENDING_APPROVAL
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum TransactionCategory {
+  OTC_DEPOSIT
+  OTC_WITHDRAWAL
+  INTRA_TRANSFER
+  INTER_BANK_TRANSFER
+  LOAN_REPAYMENT
+  LOAN_DISBURSEMENT
+  FD_OPENING
+  FD_LIQUIDATION
+  FD_INTEREST
+  FEE_CHARGE
+  INTEREST_PAYMENT
+  REVERSAL
+  ADJUSTMENT
+}
+
+model GLAccount {
+  id             String         @id @default(uuid())
+  tenantId       String
+  code           String
+  name           String
+  type           GlAccountType
+  level          GlAccountLevel
+  normalBalance  NormalBalance
+  parentId       String?
+  isSystemAccount Boolean       @default(false)
+  isActive       Boolean        @default(true)
+  description    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  tenant         Organisation   @relation(fields: [tenantId], references: [id])
+  parent         GLAccount?     @relation("GlParent", fields: [parentId], references: [id])
+  children       GLAccount[]    @relation("GlParent")
+  entries        TransactionEntry[]
+  products       Product[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, level])
+  @@index([tenantId, isSystemAccount])
+}
+
+model TransactionRecord {
+  id             String              @id @default(uuid())
+  tenantId       String
+  reference      String
+  category       TransactionCategory
+  status         TransactionStatus   @default(COMPLETED)
+  narration      String?
+  internalNarration String?          // JSON metadata (e.g. NIP beneficiary details)
+  channel        String?
+  initiatedBy    String?             // userId
+  approvedBy     String?             // userId (maker-checker)
+  reversedBy     String?
+  reversalOf     String?             // original transactionId
+  idempotencyKey String?
+  valueDate      DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  entries        TransactionEntry[]
+
+  @@unique([tenantId, reference])
+  @@index([tenantId, status])
+  @@index([tenantId, category])
+  @@index([tenantId, createdAt])
+  @@index([idempotencyKey])
+}
+
+model TransactionEntry {
+  id              String            @id @default(uuid())
+  tenantId        String
+  transactionId   String
+  glAccountId     String
+  accountId       String?           // customer Account — null for GL-to-GL internal postings
+  entryType       EntryType
+  amount          Decimal           @db.Decimal(20, 4)
+  narration       String?
+  createdAt       DateTime          @default(now())
+
+  transaction     TransactionRecord @relation(fields: [transactionId], references: [id])
+  glAccount       GLAccount         @relation(fields: [glAccountId], references: [id])
+  account         Account?          @relation(fields: [accountId], references: [id])
+
+  @@index([tenantId, transactionId])
+  @@index([tenantId, glAccountId])
+  @@index([tenantId, accountId])
+  @@index([tenantId, createdAt])
+}

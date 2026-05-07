@@ -1,0 +1,95 @@
+// ── AML / Compliance ─────────────────────────────────────────────────────────
+
+enum AmlScreeningStatus {
+  PENDING
+  CLEAR
+  HIT
+  REVIEW
+}
+
+enum AmlAlertType {
+  PEP_MATCH
+  SANCTIONS_MATCH
+  UNUSUAL_TRANSACTION
+  CTR_THRESHOLD
+  STR_FILED
+  ACCOUNT_FROZEN
+  ACCOUNT_UNFROZEN
+}
+
+enum AmlAlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum StrStatus {
+  DRAFT
+  SUBMITTED
+  ACKNOWLEDGED
+}
+
+model AmlScreening {
+  id              String             @id @default(uuid())
+  tenantId        String
+  customerId      String
+  screeningType   String             // ONBOARDING | TRANSACTION | PERIODIC
+  referenceId     String?            // transactionId or null for onboarding
+  requestPayload  Json
+  responsePayload Json?
+  status          AmlScreeningStatus @default(PENDING)
+  screenedAt      DateTime?
+  createdAt       DateTime           @default(now())
+
+  tenant          Organisation @relation(fields: [tenantId], references: [id])
+  customer        Customer     @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, status])
+  @@index([tenantId, referenceId])
+}
+
+model AmlAlert {
+  id              String           @id @default(uuid())
+  tenantId        String
+  customerId      String
+  screeningId     String?
+  alertType       AmlAlertType
+  severity        AmlAlertSeverity
+  description     String
+  metadata        Json             @default("{}")
+  isResolved      Boolean          @default(false)
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  resolutionNote  String?
+  createdAt       DateTime         @default(now())
+
+  tenant          Organisation @relation(fields: [tenantId], references: [id])
+  customer        Customer     @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, isResolved])
+  @@index([tenantId, alertType])
+}
+
+model SuspiciousTransactionReport {
+  id              String    @id @default(uuid())
+  tenantId        String
+  customerId      String
+  alertId         String?
+  transactionIds  String[]
+  narrative       String    @db.Text
+  filedBy         String    // userId or "SYSTEM"
+  status          StrStatus @default(DRAFT)
+  submittedAt     DateTime?
+  nficRefNumber   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Organisation @relation(fields: [tenantId], references: [id])
+  customer        Customer     @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, status])
+}

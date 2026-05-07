@@ -1,0 +1,267 @@
+// ── Loans ────────────────────────────────────────────────────────────────────
+
+enum LoanApplicationStatus {
+  PENDING_REVIEW
+  APPROVED
+  DECLINED
+  DISBURSED
+}
+
+enum LoanStatus {
+  ACTIVE
+  OVERDUE
+  CLOSED
+  WRITTEN_OFF
+}
+
+enum LoanClassification {
+  PERFORMING
+  WATCH
+  SUBSTANDARD
+  DOUBTFUL
+  LOST
+}
+
+enum RepaymentMethod {
+  FLAT_RATE
+  REDUCING_BALANCE
+  BULLET
+}
+
+enum RepaymentFrequency {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUALLY
+  ANNUALLY
+  BULLET
+}
+
+enum InstallmentStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  WAIVED
+}
+
+enum CollateralType {
+  REAL_ESTATE
+  VEHICLE
+  EQUIPMENT
+  CASH_COLLATERAL
+  GUARANTEE
+  STOCKS
+  OTHER
+}
+
+enum DisbursementMode {
+  ACCOUNT_CREDIT
+  CASH
+  CHEQUE
+}
+
+enum LoanFeeType {
+  ORIGINATION
+  PROCESSING
+  INSURANCE
+  LEGAL
+  MANAGEMENT
+  OTHER
+}
+
+enum FeeDeductionMethod {
+  UPFRONT
+  ADD_TO_PRINCIPAL
+}
+
+model LoanApplication {
+  id                String               @id @default(uuid())
+  tenantId          String
+  customerId        String
+  productId         String
+  applicationRef    String               // auto-generated e.g. LA-2024-000001
+
+  // Requested terms
+  requestedAmount   Decimal              @db.Decimal(20, 4)
+  tenorDays         Int
+  repaymentMethod   RepaymentMethod
+  repaymentFrequency RepaymentFrequency
+  purpose           String?
+
+  // Approved terms (set on approval)
+  approvedAmount    Decimal?             @db.Decimal(20, 4)
+  approvedRate      Decimal?             @db.Decimal(10, 6)
+  approvedTenor     Int?
+
+  status            LoanApplicationStatus @default(PENDING_REVIEW)
+  declineReason     String?
+  creditReportId    String?              // FK to CreditBureauReport
+  reviewedBy        String?
+  reviewedAt        DateTime?
+
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  collaterals       LoanCollateral[]
+  fees              LoanFee[]
+  loanAccount       LoanAccount?
+
+  @@unique([tenantId, applicationRef])
+  @@index([tenantId, customerId])
+  @@index([tenantId, status])
+}
+
+model LoanAccount {
+  id                    String             @id @default(uuid())
+  tenantId              String
+  accountId             String             @unique  // FK to Account
+  applicationId         String             @unique
+  customerId            String
+
+  // Loan terms
+  principalAmount       Decimal            @db.Decimal(20, 4)
+  interestRate          Decimal            @db.Decimal(10, 6)
+  tenorDays             Int
+  repaymentMethod       RepaymentMethod
+  repaymentFrequency    RepaymentFrequency
+  startDate             DateTime
+  expectedEndDate       DateTime
+  disbursementDate      DateTime?
+
+  // Running balances
+  outstandingPrincipal  Decimal            @db.Decimal(20, 4)
+  outstandingInterest   Decimal            @db.Decimal(20, 4) @default(0)
+  outstandingPenalty    Decimal            @db.Decimal(20, 4) @default(0)
+  accruedInterest       Decimal            @db.Decimal(20, 4) @default(0)
+  accruedPenalty        Decimal            @db.Decimal(20, 4) @default(0)
+  totalRepaid           Decimal            @db.Decimal(20, 4) @default(0)
+
+  // CBN Classification
+  classification        LoanClassification @default(PERFORMING)
+  daysPastDue           Int                @default(0)
+  provisionRate         Decimal            @db.Decimal(10, 6) @default(0.01)
+  provisionAmount       Decimal            @db.Decimal(20, 4) @default(0)
+
+  lastPenaltyAccrualDate DateTime?         // idempotency guard for EOD penalty job
+
+  status                LoanStatus         @default(ACTIVE)
+  writtenOffAt          DateTime?
+  writtenOffBy          String?
+  writeOffAmount        Decimal?           @db.Decimal(20, 4)
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  account               Account            @relation(fields: [accountId], references: [id])
+  application           LoanApplication    @relation(fields: [applicationId], references: [id])
+  repaymentSchedule     RepaymentSchedule[]
+  repayments            LoanRepayment[]
+  disbursements         LoanDisbursement[]
+  classificationHistory LoanClassificationHistory[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, classification])
+  @@index([tenantId, customerId])
+}
+
+model RepaymentSchedule {
+  id              String            @id @default(uuid())
+  tenantId        String
+  loanAccountId   String
+  installmentNo   Int
+  dueDate         DateTime
+  principalDue    Decimal           @db.Decimal(20, 4)
+  interestDue     Decimal           @db.Decimal(20, 4)
+  totalDue        Decimal           @db.Decimal(20, 4)
+  principalPaid   Decimal           @db.Decimal(20, 4) @default(0)
+  interestPaid    Decimal           @db.Decimal(20, 4) @default(0)
+  penaltyPaid     Decimal           @db.Decimal(20, 4) @default(0)
+  status          InstallmentStatus @default(PENDING)
+  paidAt          DateTime?
+
+  loanAccount     LoanAccount @relation(fields: [loanAccountId], references: [id])
+
+  @@index([tenantId, loanAccountId])
+  @@index([tenantId, status, dueDate])
+}
+
+model LoanRepayment {
+  id              String   @id @default(uuid())
+  tenantId        String
+  loanAccountId   String
+  amount          Decimal  @db.Decimal(20, 4)
+  penaltyApplied  Decimal  @db.Decimal(20, 4) @default(0)
+  interestApplied Decimal  @db.Decimal(20, 4) @default(0)
+  principalApplied Decimal @db.Decimal(20, 4) @default(0)
+  excessReturned  Decimal  @db.Decimal(20, 4) @default(0)
+  transactionId   String?
+  channel         String?
+  createdAt       DateTime @default(now())
+
+  loanAccount     LoanAccount @relation(fields: [loanAccountId], references: [id])
+
+  @@index([tenantId, loanAccountId])
+}
+
+model LoanDisbursement {
+  id              String          @id @default(uuid())
+  tenantId        String
+  loanAccountId   String
+  amount          Decimal         @db.Decimal(20, 4)
+  mode            DisbursementMode
+  targetAccountId String?
+  transactionId   String?
+  disbursedAt     DateTime        @default(now())
+  disbursedBy     String?
+
+  loanAccount     LoanAccount @relation(fields: [loanAccountId], references: [id])
+
+  @@index([tenantId, loanAccountId])
+}
+
+model LoanCollateral {
+  id              String         @id @default(uuid())
+  tenantId        String
+  applicationId   String
+  collateralType  CollateralType
+  description     String
+  estimatedValue  Decimal        @db.Decimal(20, 4)
+  documentRef     String?
+  createdAt       DateTime       @default(now())
+
+  application     LoanApplication @relation(fields: [applicationId], references: [id])
+
+  @@index([tenantId, applicationId])
+}
+
+model LoanFee {
+  id              String             @id @default(uuid())
+  tenantId        String
+  applicationId   String
+  feeType         LoanFeeType
+  amount          Decimal            @db.Decimal(20, 4)
+  deductionMethod FeeDeductionMethod @default(UPFRONT)
+  isPaid          Boolean            @default(false)
+  paidAt          DateTime?
+
+  application     LoanApplication @relation(fields: [applicationId], references: [id])
+
+  @@index([tenantId, applicationId])
+}
+
+model LoanClassificationHistory {
+  id              String             @id @default(uuid())
+  tenantId        String
+  loanAccountId   String
+  fromClass       LoanClassification
+  toClass         LoanClassification
+  daysPastDue     Int
+  provisionRate   Decimal            @db.Decimal(10, 6)
+  provisionAmount Decimal            @db.Decimal(20, 4)
+  changedAt       DateTime           @default(now())
+
+  loanAccount     LoanAccount @relation(fields: [loanAccountId], references: [id])
+
+  @@index([tenantId, loanAccountId])
+}

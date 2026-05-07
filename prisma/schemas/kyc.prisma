@@ -1,0 +1,44 @@
+// ── KYC — BVN Verification & Credit Bureau ───────────────────────────────────
+
+model BvnVerification {
+  id              String   @id @default(uuid())
+  tenantId        String
+  customerId      String
+  bvn             String
+  nibssRef        String?
+  verified        Boolean  @default(false)
+  firstName       String?  // returned by NIBSS
+  lastName        String?
+  dateOfBirth     String?
+  phoneMatched    Boolean?
+  nameMatchScore  Float?   // 0–1 fuzzy match (≥ 0.70 = pass, per CBN guidance)
+  rawResponse     Json?
+  verifiedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  customer        Customer @relation(fields: [customerId], references: [id])
+
+  @@unique([tenantId, bvn])
+  @@index([tenantId, customerId])
+}
+
+model CreditBureauReport {
+  id                String   @id @default(uuid())
+  tenantId          String
+  customerId        String
+  loanApplicationId String?
+  bureau            String   // CRC | FIRST_CENTRAL
+  requestRef        String
+  creditScore       Int?
+  classification    String?  // GOOD | FAIR | POOR | NO_HIT
+  totalExposure     Decimal? @db.Decimal(20, 4)
+  activeLoans       Int?
+  nplCount          Int?
+  rawReport         Json?
+  fetchedAt         DateTime @default(now())
+
+  customer          Customer @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, loanApplicationId])
+}

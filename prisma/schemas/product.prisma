@@ -1,0 +1,88 @@
+// ── Products, Rate Bands, Transaction Type Config ────────────────────────────
+
+enum ProductType {
+  SAVINGS
+  CURRENT
+  FIXED_DEPOSIT
+  LOAN
+}
+
+model Product {
+  id              String      @id @default(uuid())
+  tenantId        String
+  name            String
+  code            String
+  productType     ProductType
+  description     String?
+
+  // Balance / amount limits
+  minBalance      Decimal     @db.Decimal(20, 4) @default(0)
+  maxBalance      Decimal     @db.Decimal(20, 4) @default(9999999999)
+
+  // Interest
+  interestRate    Decimal     @db.Decimal(10, 6) @default(0)  // annual rate e.g. 0.04 = 4%
+
+  // Loan-specific
+  minTenorDays    Int?
+  maxTenorDays    Int?
+
+  // GL mapping (overrides type-based default if set)
+  glAccountId     String?
+
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  tenant          Organisation @relation(fields: [tenantId], references: [id])
+  glAccount       GLAccount?   @relation(fields: [glAccountId], references: [id])
+  rateBands       RateBand[]
+  accounts        Account[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, productType])
+}
+
+model RateBand {
+  id          String   @id @default(uuid())
+  tenantId    String
+  productId   String
+  minAmount   Decimal  @db.Decimal(20, 4)
+  maxAmount   Decimal  @db.Decimal(20, 4)
+  rate        Decimal  @db.Decimal(10, 6)  // annual rate
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, productId])
+}
+
+// Transaction type controls fees, VAT, WHT, and maker-checker thresholds
+model TransactionTypeConfig {
+  id                    String   @id @default(uuid())
+  tenantId              String
+  code                  String
+  name                  String
+  category              String   // maps to TransactionCategory enum
+
+  // Fee structure
+  flatFee               Decimal  @db.Decimal(20, 4) @default(0)
+  percentageFee         Decimal  @db.Decimal(10, 6) @default(0)
+  minFee                Decimal  @db.Decimal(20, 4) @default(0)
+  maxFee                Decimal  @db.Decimal(20, 4) @default(999999)
+
+  // Tax
+  vatApplicable         Boolean  @default(false)
+  whtApplicable         Boolean  @default(false)
+
+  // Maker-checker
+  requiresApprovalAbove Decimal? @db.Decimal(20, 4)
+  approvalChannels      String[] // ["OTC", "MOBILE"]
+
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}

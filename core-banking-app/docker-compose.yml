@@ -1,0 +1,122 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    container_name: cba_app
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://cba_app:changeme_in_prod@postgres:5432/cba
+      JWT_SECRET: ${JWT_SECRET:-changeme_dev_secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-changeme_dev_refresh}
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: 'false'
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: core-banking
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+      TERMII_SANDBOX: 'true'
+      SENDGRID_SANDBOX: 'true'
+      NIBSS_SANDBOX: 'true'
+      CREDIT_BUREAU_SANDBOX: 'true'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - cba_net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: cba_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cba
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cba_net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: cba_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    volumes:
+      - rmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cba_net
+
+  minio:
+    image: minio/minio:latest
+    container_name: cba_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cba_net
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: cba_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/core-banking &&
+      mc anonymous set none local/core-banking &&
+      echo 'MinIO bucket ready.'
+      "
+    networks:
+      - cba_net
+
+volumes:
+  pg_data:
+  rmq_data:
+  minio_data:
+
+networks:
+  cba_net:
+    driver: bridge

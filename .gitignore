@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.suo
+
+# Prisma generated client & migrations (generated at deploy time)
+core-banking-app/node_modules/
+core-banking-app/dist/
+core-banking-app/prisma/migrations/

@@ -1,0 +1,113 @@
+// ── Fixed Deposit ────────────────────────────────────────────────────────────
+
+enum FdStatus {
+  ACTIVE
+  MATURED
+  LIQUIDATED
+  ROLLED_OVER
+}
+
+enum InterestPaymentType {
+  UPFRONT
+  PERIODIC
+  AT_MATURITY
+}
+
+enum InterestPaymentFrequency {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUALLY
+  ANNUALLY
+}
+
+enum MaturityInstruction {
+  TRANSFER_TO_ACCOUNT
+  ROLLOVER
+  PARTIAL_ROLLOVER
+}
+
+enum LiquidationReason {
+  CUSTOMER_REQUEST
+  MATURITY
+  REGULATORY
+}
+
+model FixedDepositDetails {
+  id                    String               @id @default(uuid())
+  tenantId              String
+  accountId             String               @unique  // FK to Account
+  sourceAccountId       String               // savings/current account funds came from
+
+  // Terms
+  principal             Decimal              @db.Decimal(20, 4)
+  negotiatedRate        Decimal              @db.Decimal(10, 6)  // annual
+  tenorDays             Int
+  startDate             DateTime
+  maturityDate          DateTime
+
+  // Interest
+  interestPaymentType   InterestPaymentType
+  interestPaymentFrequency InterestPaymentFrequency?
+  expectedInterest      Decimal              @db.Decimal(20, 4)
+  effectiveTaxRate      Decimal              @db.Decimal(10, 6) @default(0.10)
+  netInterestAfterTax   Decimal              @db.Decimal(20, 4)
+  upfrontInterestPaid   Boolean              @default(false)
+
+  // Maturity instructions
+  maturityInstruction   MaturityInstruction  @default(TRANSFER_TO_ACCOUNT)
+  rolloverTargetAccountId String?
+  partialRolloverAmount Decimal?             @db.Decimal(20, 4)
+
+  // Tracking
+  status                FdStatus             @default(ACTIVE)
+  certificateNumber     String?
+  parentFdId            String?              // if this is a rolled-over FD
+  rolledOverToFdId      String?
+
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  account               Account              @relation(fields: [accountId], references: [id])
+  interestPayments      FdInterestPayment[]
+  liquidation           FdLiquidation?
+
+  @@index([tenantId, status])
+  @@index([tenantId, maturityDate])
+}
+
+model FdInterestPayment {
+  id            String              @id @default(uuid())
+  tenantId      String
+  fdId          String
+  scheduledDate DateTime
+  grossAmount   Decimal             @db.Decimal(20, 4)
+  taxAmount     Decimal             @db.Decimal(20, 4)
+  netAmount     Decimal             @db.Decimal(20, 4)
+  isPaid        Boolean             @default(false)
+  paidAt        DateTime?
+  transactionId String?
+
+  fd            FixedDepositDetails @relation(fields: [fdId], references: [id])
+
+  @@index([tenantId, fdId])
+  @@index([tenantId, isPaid, scheduledDate])
+}
+
+model FdLiquidation {
+  id                String              @id @default(uuid())
+  tenantId          String
+  fdId              String              @unique
+  reason            LiquidationReason
+  daysHeld          Int
+  principalReturned Decimal             @db.Decimal(20, 4)
+  grossInterestEarned Decimal           @db.Decimal(20, 4)
+  penaltyAmount     Decimal             @db.Decimal(20, 4) @default(0)
+  taxAmount         Decimal             @db.Decimal(20, 4) @default(0)
+  netAmountPaid     Decimal             @db.Decimal(20, 4)
+  liquidatedAt      DateTime            @default(now())
+  processedBy       String?
+
+  fd                FixedDepositDetails @relation(fields: [fdId], references: [id])
+
+  @@index([tenantId])
+}

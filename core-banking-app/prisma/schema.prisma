@@ -1,0 +1,34 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Prisma root schema
+// All domain models live in prisma/schemas/*.prisma
+// The prismaSchemaFolder feature reads them automatically.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Domain schemas (auto-loaded from prisma/schemas/):
+//   organisation.prisma  – Organisation, Branch
+//   user.prisma          – User, Role, Permission, UserRole, UserBranchAccess, Session
+//   customer.prisma      – Customer, CustomerDocument, Address
+//   gl.prisma            – GLAccount, TransactionRecord, TransactionEntry
+//   product.prisma       – Product, RateBand, TransactionTypeConfig
+//   account.prisma       – Account
+//   savings.prisma       – SavingsInterestAccrual
+//   current.prisma       – OverdraftFacility, ChequeBook
+//   fd.prisma            – FixedDepositDetails, FdInterestPayment, FdLiquidation
+//   loan.prisma          – LoanApplication, LoanAccount, RepaymentSchedule,
+//                          LoanRepayment, LoanDisbursement, LoanCollateral,
+//                          LoanFee, LoanClassificationHistory
+//   nibss.prisma         – NibssSession, RegulatoryReport
+//   notification.prisma  – NotificationLog, NotificationTemplate
+//   baas.prisma          – ApiKey, Webhook, WebhookDelivery
+//   admin.prisma         – TaxConfiguration, WorkingCalendar, MakerCheckerConfig
+//   audit.prisma         – AuditLog
+//   aml.prisma           – AmlScreening, AmlAlert, SuspiciousTransactionReport
+//   kyc.prisma           – BvnVerification, CreditBureauReport

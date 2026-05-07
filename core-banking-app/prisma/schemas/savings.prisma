@@ -1,0 +1,20 @@
+// ── Savings Account extras ───────────────────────────────────────────────────
+
+model SavingsInterestAccrual {
+  id            String   @id @default(uuid())
+  tenantId      String
+  accountId     String
+  periodStart   DateTime
+  periodEnd     DateTime
+  principalUsed Decimal  @db.Decimal(20, 4)
+  rateUsed      Decimal  @db.Decimal(10, 6)
+  grossInterest Decimal  @db.Decimal(20, 4)
+  whtDeducted   Decimal  @db.Decimal(20, 4) @default(0)
+  netInterest   Decimal  @db.Decimal(20, 4)
+  isPaid        Boolean  @default(false)
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId, accountId])
+  @@index([tenantId, isPaid])
+}

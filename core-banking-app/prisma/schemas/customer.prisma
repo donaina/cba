@@ -1,0 +1,113 @@
+// ── Customer & KYC ───────────────────────────────────────────────────────────
+
+enum CustomerType {
+  INDIVIDUAL
+  CORPORATE
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum KycTier {
+  TIER_1
+  TIER_2
+  TIER_3
+}
+
+enum DocumentType {
+  PASSPORT
+  NATIONAL_ID
+  DRIVERS_LICENCE
+  UTILITY_BILL
+  PROOF_OF_ADDRESS
+  BVN_SLIP
+  CAC_CERTIFICATE
+  MEMORANDUM_OF_ASSOCIATION
+  BOARD_RESOLUTION
+  PHOTO
+}
+
+enum DocumentStatus {
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+model Customer {
+  id           String       @id @default(uuid())
+  tenantId     String
+  customerType CustomerType @default(INDIVIDUAL)
+
+  // Personal info
+  firstName    String?
+  middleName   String?
+  lastName     String?
+  dateOfBirth  DateTime?
+  gender       String?
+  nationality  String?
+
+  // Corporate info
+  companyName  String?
+  rcNumber     String?
+  taxId        String?
+
+  // Contact
+  email        String?
+  phone        String
+  altPhone     String?
+
+  // Identity
+  bvn          String?
+  bvnVerified  Boolean  @default(false)
+  nin          String?
+
+  // KYC
+  kycStatus    KycStatus @default(PENDING)
+  kycTier      KycTier   @default(TIER_1)
+
+  // PEP / Compliance flags
+  isPep        Boolean  @default(false)
+  pepNote      String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       Organisation @relation(fields: [tenantId], references: [id])
+  documents    CustomerDocument[]
+  accounts     Account[]
+  amlScreenings AmlScreening[]
+  amlAlerts    AmlAlert[]
+  strReports   SuspiciousTransactionReport[]
+  bvnVerifications BvnVerification[]
+  creditReports    CreditBureauReport[]
+
+  @@index([tenantId])
+  @@index([tenantId, phone])
+  @@index([tenantId, bvn])
+}
+
+model CustomerDocument {
+  id           String         @id @default(uuid())
+  tenantId     String
+  customerId   String
+  documentType DocumentType
+  objectKey    String         // MinIO: {tenantId}/{customerId}/{docType}/{uuid}.{ext}
+  mimeType     String
+  fileName     String
+  status       DocumentStatus @default(PENDING_REVIEW)
+  rejectionNote String?
+  verifiedBy   String?
+  verifiedAt   DateTime?
+  deletedAt    DateTime?      // soft delete — blocked if VERIFIED
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  customer     Customer @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, documentType])
+}
