@@ -1,9 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { config } from 'dotenv';
+import * as path from 'path';
+import * as dotenv from 'dotenv';
 
-config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
+const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
 
 const GL_ACCOUNTS = [
   // ASSET

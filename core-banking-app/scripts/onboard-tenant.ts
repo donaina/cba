@@ -14,11 +14,16 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { execSync } from 'child_process';
-import { config } from 'dotenv';
+import * as path from 'path';
+import * as dotenv from 'dotenv';
 
-config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is not set. Make sure .env exists in core-banking-app/');
+}
+
+const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
 
 function arg(flag: string): string {
   const idx = process.argv.indexOf(flag);
