@@ -1,10 +1,13 @@
 import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { RequirePermission, TenantContext } from '@libs/common';
 import { PrismaService } from '@libs/database';
 import { NotFoundException } from '@nestjs/common';
 import { Decimal } from 'decimal.js';
 import { AccountStatus } from '@prisma/client';
 
+@ApiTags('Accounts')
+@ApiBearerAuth()
 @Controller('accounts')
 export class AccountsController {
   constructor(
@@ -12,6 +15,9 @@ export class AccountsController {
     private readonly ctx: TenantContext,
   ) {}
 
+  @ApiOperation({ summary: 'Get live balances for an account' })
+  @ApiParam({ name: 'id', description: 'Account UUID' })
+  @ApiResponse({ status: 200, description: 'Current, available, and ledger balances (4dp)' })
   @Get(':id/balance')
   @RequirePermission('account:read')
   async getBalance(@Param('id') id: string) {
@@ -30,6 +36,9 @@ export class AccountsController {
     };
   }
 
+  @ApiOperation({ summary: 'Update account status (freeze, dormant, reactivate)' })
+  @ApiParam({ name: 'id', description: 'Account UUID' })
+  @ApiResponse({ status: 200, description: 'Account status updated' })
   @Patch(':id/status')
   @RequirePermission('account:update')
   async updateStatus(

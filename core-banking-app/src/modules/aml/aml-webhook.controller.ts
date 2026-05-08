@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { Request } from 'express';
 import { createHmac } from 'crypto';
 import { Public } from '@libs/common';
@@ -13,12 +14,17 @@ import { AmlService } from './aml.service';
 import { AmlWebhookDto } from './dto/aml-webhook.dto';
 import { AmlAlertType, AmlAlertSeverity } from '@prisma/client';
 
+@ApiTags('Webhooks')
 @Controller('webhooks/aml')
 export class AmlWebhookController {
   private readonly logger = new Logger(AmlWebhookController.name);
 
   constructor(private readonly amlService: AmlService) {}
 
+  @ApiOperation({ summary: 'AML vendor callback (HMAC-SHA256 verified, public endpoint)' })
+  @ApiHeader({ name: 'x-aml-signature', required: true, description: 'HMAC-SHA256 of body+timestamp' })
+  @ApiHeader({ name: 'x-aml-timestamp', required: true, description: 'Unix timestamp in ms (replay protection: ±5 min)' })
+  @ApiResponse({ status: 201, description: 'Webhook received and processed' })
   @Post('callback')
   @Public()
   async handleCallback(

@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService, HealthIndicator, HealthIndicatorResult } from '@nestjs/terminus';
 import { PrismaService } from '@libs/database';
 import { Public } from '@libs/common';
@@ -20,6 +21,7 @@ export class PrismaHealthIndicator extends HealthIndicator {
   }
 }
 
+@ApiTags('Health')
 @Public()
 @Controller('health')
 export class HealthController {
@@ -28,18 +30,21 @@ export class HealthController {
     private readonly prismaIndicator: PrismaHealthIndicator,
   ) {}
 
+  @ApiOperation({ summary: 'Full health check (database connectivity)' })
   @Get()
   @HealthCheck()
   check() {
     return this.health.check([() => this.prismaIndicator.isHealthy('database')]);
   }
 
+  @ApiOperation({ summary: 'Readiness probe' })
   @Get('ready')
   @HealthCheck()
   ready() {
     return this.health.check([() => this.prismaIndicator.isHealthy('database')]);
   }
 
+  @ApiOperation({ summary: 'Liveness probe' })
   @Get('live')
   live() {
     return { status: 'ok', timestamp: new Date().toISOString() };

@@ -9,6 +9,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum ProductType {
   SAVINGS = 'SAVINGS',
@@ -18,51 +19,61 @@ export enum ProductType {
 }
 
 export class CreateProductDto {
+  @ApiProperty({ example: 'Regular Savings', description: 'Product name' })
   @IsString()
   @IsNotEmpty()
   name: string;
 
+  @ApiProperty({ example: 'REG_SAV', description: 'Unique product code' })
   @IsString()
   @IsNotEmpty()
   code: string;
 
+  @ApiProperty({ enum: ProductType })
   @IsEnum(ProductType)
   productType: ProductType;
 
+  @ApiPropertyOptional({ description: 'Product description' })
   @IsOptional()
   @IsString()
   description?: string;
 
+  @ApiPropertyOptional({ example: 0, description: 'Minimum balance requirement' })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Type(() => Number)
   minBalance?: number;
 
+  @ApiPropertyOptional({ example: 300000, description: 'Maximum balance cap (KYC tier limit)' })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Type(() => Number)
   maxBalance?: number;
 
+  @ApiPropertyOptional({ example: 0.04, description: 'Default annual interest rate (e.g. 0.04 = 4%)' })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Type(() => Number)
   interestRate?: number;
 
+  @ApiPropertyOptional({ example: 30, description: 'Minimum tenor in days (FD/loan products)' })
   @IsOptional()
   @IsInt()
   @IsPositive()
   @Type(() => Number)
   minTenorDays?: number;
 
+  @ApiPropertyOptional({ example: 365, description: 'Maximum tenor in days (FD/loan products)' })
   @IsOptional()
   @IsInt()
   @IsPositive()
   @Type(() => Number)
   maxTenorDays?: number;
 
+  @ApiPropertyOptional({ description: 'GL control account UUID for this product' })
   @IsOptional()
   @IsString()
   glAccountId?: string;
