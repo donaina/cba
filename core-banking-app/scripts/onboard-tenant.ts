@@ -10,20 +10,10 @@
  *     --email "admin@feb.com" \
  *     --password "SecureP@ss1"
  */
-import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { execSync } from 'child_process';
-import * as path from 'path';
-import * as dotenv from 'dotenv';
-
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set. Make sure .env exists in core-banking-app/');
-}
-
-const prisma = new PrismaClient();
+import { prisma } from './prisma-client';
 
 function arg(flag: string): string {
   const idx = process.argv.indexOf(flag);
