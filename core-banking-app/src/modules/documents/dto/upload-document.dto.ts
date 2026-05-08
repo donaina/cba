@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export enum DocumentType {
   PASSPORT = 'PASSPORT',
@@ -14,10 +15,12 @@ export enum DocumentType {
 }
 
 export class UploadDocumentDto {
+  @ApiProperty({ description: 'Customer UUID this document belongs to' })
   @IsString()
   @IsNotEmpty()
   customerId: string;
 
+  @ApiProperty({ enum: DocumentType, description: 'KYC document type' })
   @IsEnum(DocumentType)
   documentType: DocumentType;
 }
