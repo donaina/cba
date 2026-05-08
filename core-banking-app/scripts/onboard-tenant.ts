@@ -14,8 +14,11 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { execSync } from 'child_process';
+import { config } from 'dotenv';
 
-const prisma = new PrismaClient();
+config();
+
+const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
 
 function arg(flag: string): string {
   const idx = process.argv.indexOf(flag);

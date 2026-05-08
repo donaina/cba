@@ -1,6 +1,9 @@
 import { PrismaClient } from '@prisma/client';
+import { config } from 'dotenv';
 
-const prisma = new PrismaClient();
+config();
+
+const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
 
 const TRANSACTION_TYPES = [
   { code: 'OTC_DEPOSIT',      name: 'OTC Deposit',           category: 'OTC_DEPOSIT',      flatFee: '0',   vatApplicable: false, requiresApprovalAbove: null },

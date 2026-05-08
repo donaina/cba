@@ -1,6 +1,9 @@
 import { PrismaClient } from '@prisma/client';
+import { config } from 'dotenv';
 
-const prisma = new PrismaClient();
+config();
+
+const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
 
 const PERMISSIONS = [
   { code: 'user:create',              description: 'Create bank staff users' },
