@@ -53,6 +53,7 @@ const FINANCIAL_ROUTES = [
       ],
       uri: process.env.RABBITMQ_URL ?? 'amqp://localhost:5672',
       connectionInitOptions: { wait: false },
+      isGlobal: true,
     }),
 
     // Domain modules
