@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../prisma-client';
 
 const TRANSACTION_TYPES = [
   { code: 'OTC_DEPOSIT',      name: 'OTC Deposit',           category: 'OTC_DEPOSIT',      flatFee: '0',   vatApplicable: false, requiresApprovalAbove: null },

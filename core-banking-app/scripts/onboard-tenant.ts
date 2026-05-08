@@ -10,12 +10,10 @@
  *     --email "admin@feb.com" \
  *     --password "SecureP@ss1"
  */
-import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { execSync } from 'child_process';
-
-const prisma = new PrismaClient();
+import { prisma } from './prisma-client';
 
 function arg(flag: string): string {
   const idx = process.argv.indexOf(flag);

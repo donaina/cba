@@ -46,14 +46,17 @@ const FINANCIAL_ROUTES = [
     CommonModule,
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
-    RabbitMQModule.forRoot({
-      exchanges: [
-        { name: 'cba.transactions', type: 'topic' },
-        { name: 'cba.dlx', type: 'topic' },
-      ],
-      uri: process.env.RABBITMQ_URL ?? 'amqp://localhost:5672',
-      connectionInitOptions: { wait: false },
-    }),
+    {
+      ...RabbitMQModule.forRoot({
+        exchanges: [
+          { name: 'cba.transactions', type: 'topic' },
+          { name: 'cba.dlx', type: 'topic' },
+        ],
+        uri: process.env.RABBITMQ_URL ?? 'amqp://localhost:5672',
+        connectionInitOptions: { wait: false },
+      }),
+      global: true,
+    },
 
     // Domain modules
     GlModule,

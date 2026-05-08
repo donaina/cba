@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../prisma-client';
 
 const PERMISSIONS = [
   { code: 'user:create',              description: 'Create bank staff users' },

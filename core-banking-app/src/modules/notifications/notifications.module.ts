@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { HttpModule } from '@nestjs/axios';
 import { TenantContextModule } from '@libs/common';
 import { NotificationsService } from './notifications.service';
@@ -10,7 +9,6 @@ import { SendgridService } from './sendgrid.service';
 
 @Module({
   imports: [
-    RabbitMQModule,
     HttpModule,
     TenantContextModule,
   ],
