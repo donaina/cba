@@ -23,7 +23,7 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set. Make sure .env exists in core-banking-app/');
 }
 
-const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
+const prisma = new PrismaClient();
 
 function arg(flag: string): string {
   const idx = process.argv.indexOf(flag);

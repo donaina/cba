@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
+const prisma = new PrismaClient();
 
 const PERMISSIONS = [
   { code: 'user:create',              description: 'Create bank staff users' },
