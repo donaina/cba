@@ -38,6 +38,7 @@ export class AdminService {
             ? new Decimal(dto.interestRate)
             : undefined,
         interestRateType: dto.interestRateType,
+        accrualFrequency: dto.accrualFrequency,
         minTenorDays: dto.minTenorDays,
         maxTenorDays: dto.maxTenorDays,
         glAccountId: dto.glAccountId,
@@ -92,6 +93,9 @@ export class AdminService {
         }),
         ...(dto.interestRateType !== undefined && {
           interestRateType: dto.interestRateType,
+        }),
+        ...(dto.accrualFrequency !== undefined && {
+          accrualFrequency: dto.accrualFrequency,
         }),
         ...(dto.minTenorDays !== undefined && {
           minTenorDays: dto.minTenorDays,
