@@ -33,8 +33,8 @@ Built on **NestJS · PostgreSQL · Prisma · RabbitMQ · MinIO**
 | Layer | Technology |
 |-------|-----------|
 | Runtime | Node.js 20, TypeScript 5 |
-| Framework | NestJS 10 (modular monolith) |
-| Database | PostgreSQL 16 + Prisma ORM |
+| Framework | NestJS 11 (modular monolith) |
+| Database | PostgreSQL 16 + Prisma 7 ORM |
 | Message broker | RabbitMQ 3.13 |
 | Object storage | MinIO (S3-compatible) |
 | Money arithmetic | Decimal.js (no native floats ever) |
@@ -72,9 +72,9 @@ docker compose up -d postgres rabbitmq minio minio-init
 docker compose ps   # wait until all show "healthy"
 ```
 
-### 4. Run database migrations
+### 4. Push schema and generate client
 ```bash
-npx prisma migrate deploy
+npx prisma db push      # applies schema (Prisma 7 — no migration files needed in dev)
 npx prisma generate
 ```
 
