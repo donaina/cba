@@ -14,6 +14,15 @@ enum InterestRateType {
   VARIABLE           // rate floats with CBN MPR
 }
 
+enum AccrualFrequency {
+  DAILY         // 365 periods/year — CBN norm for savings/current
+  MONTHLY       // 12 periods/year — standard for term loans
+  QUARTERLY     // 4 periods/year
+  SEMI_ANNUAL   // 2 periods/year
+  ANNUAL        // 1 period/year
+  AT_MATURITY   // single bullet payment — common for short-term FDs
+}
+
 model Product {
   id              String      @id @default(uuid())
   tenantId        String
@@ -27,8 +36,9 @@ model Product {
   maxBalance      Decimal     @db.Decimal(20, 4) @default(9999999999)
 
   // Interest
-  interestRate     Decimal          @db.Decimal(10, 6) @default(0)  // annual rate e.g. 0.04 = 4%
-  interestRateType InterestRateType @default(FLAT_RATE)
+  interestRate      Decimal           @db.Decimal(10, 6) @default(0)  // annual rate e.g. 0.04 = 4%
+  interestRateType  InterestRateType  @default(FLAT_RATE)
+  accrualFrequency  AccrualFrequency  @default(MONTHLY)  // how often interest compounds/pays
 
   // Loan-specific
   minTenorDays    Int?

@@ -25,6 +25,15 @@ export enum InterestRateType {
   VARIABLE = 'VARIABLE',
 }
 
+export enum AccrualFrequency {
+  DAILY = 'DAILY',
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  SEMI_ANNUAL = 'SEMI_ANNUAL',
+  ANNUAL = 'ANNUAL',
+  AT_MATURITY = 'AT_MATURITY',
+}
+
 export class CreateProductDto {
   @ApiProperty({ example: 'Regular Savings', description: 'Product name' })
   @IsString()
@@ -70,6 +79,11 @@ export class CreateProductDto {
   @IsOptional()
   @IsEnum(InterestRateType)
   interestRateType?: InterestRateType;
+
+  @ApiPropertyOptional({ enum: AccrualFrequency, default: AccrualFrequency.MONTHLY, description: 'How often interest accrues/pays — maps to amortization periodsPerYear' })
+  @IsOptional()
+  @IsEnum(AccrualFrequency)
+  accrualFrequency?: AccrualFrequency;
 
   @ApiPropertyOptional({ example: 30, description: 'Minimum tenor in days (FD/loan products)' })
   @IsOptional()

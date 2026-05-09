@@ -165,6 +165,10 @@ export class LoansService {
       throw new BadRequestException('Application is missing approved amount or rate');
     }
 
+    const product = await this.prisma.product.findFirst({
+      where: { id: application.productId, tenantId },
+    });
+
     const org = await this.prisma.organisation.findUnique({ where: { id: tenantId } });
     if (!org || !org.sortCode) {
       throw new BadRequestException('Organisation sort code not configured');
@@ -179,12 +183,17 @@ export class LoansService {
     const startDate = new Date();
     const expectedEndDate = addDays(startDate, tenorDays);
 
+    const periodsPerYear = AmortizationUtil.periodsPerYear(
+      product?.accrualFrequency ?? 'MONTHLY',
+    );
+
     const schedule = AmortizationUtil.buildSchedule({
       principal,
       annualRate: approvedRate,
       tenorDays,
       startDate,
       method: application.repaymentMethod as any,
+      periodsPerYear,
     });
 
     const reference = `LOAN-DISB-${applicationId}-${Date.now()}`;

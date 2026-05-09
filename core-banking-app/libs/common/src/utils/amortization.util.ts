@@ -20,7 +20,20 @@ export interface AmortizationParams {
   periodsPerYear?: number;
 }
 
+const ACCRUAL_TO_PERIODS: Record<string, number> = {
+  DAILY: 365,
+  MONTHLY: 12,
+  QUARTERLY: 4,
+  SEMI_ANNUAL: 2,
+  ANNUAL: 1,
+  AT_MATURITY: 1,
+};
+
 export class AmortizationUtil {
+  static periodsPerYear(accrualFrequency: string): number {
+    return ACCRUAL_TO_PERIODS[accrualFrequency] ?? 12;
+  }
+
   static buildSchedule(params: AmortizationParams): InstallmentRow[] {
     const { principal, annualRate, tenorDays, startDate, method } = params;
     const periodsPerYear = params.periodsPerYear ?? 12;

@@ -22,6 +22,22 @@ const RATE_TYPE_LABELS: Record<string, string> = {
   VARIABLE: 'Variable',
 };
 
+const ACCRUAL_LABELS: Record<string, string> = {
+  DAILY: 'Daily',
+  MONTHLY: 'Monthly',
+  QUARTERLY: 'Quarterly',
+  SEMI_ANNUAL: 'Semi-annual',
+  ANNUAL: 'Annual',
+  AT_MATURITY: 'At Maturity',
+};
+
+const ACCRUAL_OPTIONS: Record<string, string[]> = {
+  SAVINGS:       ['DAILY', 'MONTHLY'],
+  CURRENT:       ['DAILY', 'MONTHLY'],
+  LOAN:          ['MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL'],
+  FIXED_DEPOSIT: ['MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL', 'AT_MATURITY'],
+};
+
 const TYPE_LABELS: Record<string, string> = {
   SAVINGS: 'Savings',
   CURRENT: 'Current',
@@ -36,6 +52,7 @@ const productSchema = z.object({
   description: z.string().optional(),
   interestRate: z.coerce.number().min(0).max(100).optional(),
   interestRateType: z.enum(['FLAT_RATE', 'REDUCING_BALANCE', 'FIXED', 'VARIABLE']).optional(),
+  accrualFrequency: z.enum(['DAILY', 'MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL', 'AT_MATURITY']).optional(),
   minBalance: z.coerce.number().min(0).optional(),
   maxBalance: z.coerce.number().min(0).optional(),
   minTenorDays: z.coerce.number().int().positive().optional(),
@@ -66,6 +83,7 @@ const FIELD_TIPS = {
   rateBandMin: 'Lower bound of the deposit/principal range this rate applies to (inclusive).',
   rateBandMax: 'Upper bound of the deposit/principal range this rate applies to (inclusive).',
   rateBandRate: 'Annual interest rate for this amount band, entered as a percentage (e.g. 5 = 5% p.a.).',
+  accrualFrequency: 'How often interest is calculated and applied. DAILY = CBN norm for savings/current (rate ÷ 365 × balance each day). MONTHLY = standard for term loans (12 EMI periods/year). AT MATURITY = simple interest paid in one lump sum — common for short-term FDs.',
 };
 
 function ProductFormFields({ register, errors, watch, setValue, isEdit = false }: {
@@ -75,6 +93,8 @@ function ProductFormFields({ register, errors, watch, setValue, isEdit = false }
   const isLoan = productType === 'LOAN';
   const isTenor = productType === 'FIXED_DEPOSIT' || productType === 'LOAN';
   const interestRateType = watch('interestRateType') ?? 'FLAT_RATE';
+  const accrualFrequency = watch('accrualFrequency') ?? (productType === 'SAVINGS' || productType === 'CURRENT' ? 'DAILY' : productType === 'FIXED_DEPOSIT' ? 'AT_MATURITY' : 'MONTHLY');
+  const accrualOptions = ACCRUAL_OPTIONS[productType] ?? ['MONTHLY'];
 
   return (
     <div className="space-y-4">
@@ -120,6 +140,11 @@ function ProductFormFields({ register, errors, watch, setValue, isEdit = false }
           <Input type="number" placeholder="50000" {...register('minBalance')} />
         </FormField>
       )}
+      <FormField label="Interest Accrual Frequency" tooltip={FIELD_TIPS.accrualFrequency}>
+        <Select value={accrualFrequency} onValueChange={v => setValue('accrualFrequency', v as any)}>
+          {accrualOptions.map(v => <SelectItem key={v} value={v}>{ACCRUAL_LABELS[v]}</SelectItem>)}
+        </Select>
+      </FormField>
       {isTenor && (
         <div className="grid grid-cols-2 gap-4">
           <FormField label="Min Tenor (days)" error={errors.minTenorDays?.message} tooltip={FIELD_TIPS.minTenorDays}>
@@ -309,10 +334,15 @@ export default function ProductsPage() {
   const editForm = useForm<ProductForm>({ resolver: zodResolver(productSchema) });
 
   const create = useMutation({
-    mutationFn: (dto: ProductForm) => apiClient.post('/admin/products', {
-      ...dto,
-      interestRate: toDecimalRate(dto.interestRate),
-    }).then(r => r.data),
+    mutationFn: (dto: ProductForm) => {
+      const defaultFreq = dto.productType === 'SAVINGS' || dto.productType === 'CURRENT' ? 'DAILY'
+        : dto.productType === 'FIXED_DEPOSIT' ? 'AT_MATURITY' : 'MONTHLY';
+      return apiClient.post('/admin/products', {
+        ...dto,
+        interestRate: toDecimalRate(dto.interestRate),
+        accrualFrequency: dto.accrualFrequency ?? defaultFreq,
+      }).then(r => r.data);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'products'] });
       toast.success('Product created');
@@ -345,6 +375,7 @@ export default function ProductsPage() {
       description: p.description ?? '',
       interestRate: p.interestRate != null ? Number(p.interestRate) * 100 : undefined,
       interestRateType: p.interestRateType ?? 'FLAT_RATE',
+      accrualFrequency: p.accrualFrequency ?? 'MONTHLY',
       minBalance: p.minBalance != null ? Number(p.minBalance) : undefined,
       maxBalance: p.maxBalance != null ? Number(p.maxBalance) : undefined,
       minTenorDays: p.minTenorDays ?? undefined,
@@ -415,7 +446,7 @@ export default function ProductsPage() {
         <Table>
           <Thead>
             <Tr>
-              <Th>Name</Th><Th>Code</Th><Th>Type</Th><Th>Interest Rate</Th><Th>Rate Method</Th><Th>Min Amount</Th><Th></Th>
+              <Th>Name</Th><Th>Code</Th><Th>Type</Th><Th>Rate</Th><Th>Rate Method</Th><Th>Accrual</Th><Th>Min Amount</Th><Th></Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -428,6 +459,7 @@ export default function ProductsPage() {
                 <Td className="text-xs text-muted-foreground">
                   {p.productType === 'LOAN' ? (RATE_TYPE_LABELS[p.interestRateType] ?? '—') : '—'}
                 </Td>
+                <Td className="text-xs text-muted-foreground">{ACCRUAL_LABELS[p.accrualFrequency] ?? '—'}</Td>
                 <Td>{p.minBalance != null ? `₦${Number(p.minBalance).toLocaleString()}` : '—'}</Td>
                 <Td>
                   <div className="flex items-center gap-1">
