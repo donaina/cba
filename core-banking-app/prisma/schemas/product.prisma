@@ -7,6 +7,13 @@ enum ProductType {
   LOAN
 }
 
+enum InterestRateType {
+  FLAT_RATE          // charged on original principal throughout
+  REDUCING_BALANCE   // charged only on outstanding principal
+  FIXED              // rate locked for the full tenor
+  VARIABLE           // rate floats with CBN MPR
+}
+
 model Product {
   id              String      @id @default(uuid())
   tenantId        String
@@ -20,7 +27,8 @@ model Product {
   maxBalance      Decimal     @db.Decimal(20, 4) @default(9999999999)
 
   // Interest
-  interestRate    Decimal     @db.Decimal(10, 6) @default(0)  // annual rate e.g. 0.04 = 4%
+  interestRate     Decimal          @db.Decimal(10, 6) @default(0)  // annual rate e.g. 0.04 = 4%
+  interestRateType InterestRateType @default(FLAT_RATE)
 
   // Loan-specific
   minTenorDays    Int?

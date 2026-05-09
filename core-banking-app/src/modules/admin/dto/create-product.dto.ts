@@ -18,6 +18,13 @@ export enum ProductType {
   LOAN = 'LOAN',
 }
 
+export enum InterestRateType {
+  FLAT_RATE = 'FLAT_RATE',
+  REDUCING_BALANCE = 'REDUCING_BALANCE',
+  FIXED = 'FIXED',
+  VARIABLE = 'VARIABLE',
+}
+
 export class CreateProductDto {
   @ApiProperty({ example: 'Regular Savings', description: 'Product name' })
   @IsString()
@@ -58,6 +65,11 @@ export class CreateProductDto {
   @Min(0)
   @Type(() => Number)
   interestRate?: number;
+
+  @ApiPropertyOptional({ enum: InterestRateType, default: InterestRateType.FLAT_RATE, description: 'How interest is calculated (loan products)' })
+  @IsOptional()
+  @IsEnum(InterestRateType)
+  interestRateType?: InterestRateType;
 
   @ApiPropertyOptional({ example: 30, description: 'Minimum tenor in days (FD/loan products)' })
   @IsOptional()
