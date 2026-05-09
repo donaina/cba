@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Param,
   Body,
   UseInterceptors,
@@ -86,6 +87,28 @@ export class AdminController {
   @RequirePermission('admin:read')
   getRateBands(@Param('id') productId: string) {
     return this.adminService.getRateBands(productId);
+  }
+
+  @ApiOperation({ summary: 'Update a rate band' })
+  @ApiParam({ name: 'id', description: 'Product UUID' })
+  @ApiParam({ name: 'bandId', description: 'Rate band UUID' })
+  @Patch('products/:id/rate-bands/:bandId')
+  @RequirePermission('admin:config')
+  updateRateBand(
+    @Param('bandId') bandId: string,
+    @Body() dto: CreateRateBandDto,
+  ) {
+    return this.adminService.updateRateBand(bandId, dto);
+  }
+
+  @ApiOperation({ summary: 'Delete a rate band' })
+  @ApiParam({ name: 'id', description: 'Product UUID' })
+  @ApiParam({ name: 'bandId', description: 'Rate band UUID' })
+  @Delete('products/:id/rate-bands/:bandId')
+  @RequirePermission('admin:config')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteRateBand(@Param('bandId') bandId: string) {
+    return this.adminService.deleteRateBand(bandId);
   }
 
   // ─── Transaction Types ─────────────────────────────────────────────────────

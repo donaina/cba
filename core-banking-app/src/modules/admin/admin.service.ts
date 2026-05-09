@@ -125,6 +125,29 @@ export class AdminService {
     });
   }
 
+  async updateRateBand(bandId: string, dto: CreateRateBandDto) {
+    const existing = await this.prisma.rateBand.findFirst({
+      where: { id: bandId, tenantId: this.ctx.tenantId },
+    });
+    if (!existing) throw new NotFoundException('Rate band not found');
+    return this.prisma.rateBand.update({
+      where: { id: bandId },
+      data: {
+        minAmount: new Decimal(dto.minAmount),
+        maxAmount: new Decimal(dto.maxAmount),
+        rate: new Decimal(dto.rate),
+      },
+    });
+  }
+
+  async deleteRateBand(bandId: string) {
+    const existing = await this.prisma.rateBand.findFirst({
+      where: { id: bandId, tenantId: this.ctx.tenantId },
+    });
+    if (!existing) throw new NotFoundException('Rate band not found');
+    await this.prisma.rateBand.delete({ where: { id: bandId } });
+  }
+
   // ─── Transaction Types ─────────────────────────────────────────────────────
 
   async createTransactionType(dto: CreateTransactionTypeDto) {
