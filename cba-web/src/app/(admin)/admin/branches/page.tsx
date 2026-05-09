@@ -101,13 +101,22 @@ export default function BranchesPage() {
               <FormField label="Branch Name" error={createForm.formState.errors.name?.message} required>
                 <Input placeholder="Lagos Island Branch" {...createForm.register('name')} />
               </FormField>
-              <FormField label="Branch Code" error={createForm.formState.errors.code?.message} required>
+              <FormField
+                label="Branch Code"
+                error={createForm.formState.errors.code?.message}
+                required
+                tooltip="Short unique code used in reports and account prefixes (e.g. LGS001). Cannot be changed after accounts are opened at this branch."
+              >
                 <Input placeholder="LGS001" {...createForm.register('code')} />
               </FormField>
               <FormField label="Address">
                 <Input placeholder="1 Marina Road, Lagos" {...createForm.register('address')} />
               </FormField>
-              <FormField label="Branch Type" required>
+              <FormField
+                label="Branch Type"
+                required
+                tooltip="HEAD OFFICE: the primary branch — only one allowed per tenant. BRANCH: a standard branch. AGENCY: a limited-service agent location."
+              >
                 <Select value={createForm.watch('branchType')} onValueChange={v => createForm.setValue('branchType', v as any)}>
                   <SelectItem value="HEAD_OFFICE">Head Office</SelectItem>
                   <SelectItem value="BRANCH">Branch</SelectItem>
