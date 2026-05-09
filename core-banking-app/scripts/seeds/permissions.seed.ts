@@ -28,6 +28,8 @@ const PERMISSIONS = [
   { code: 'document:read',           description: 'View documents' },
   { code: 'gl:read',                 description: 'View chart of accounts and balances' },
   { code: 'gl:manage',               description: 'Create / edit GL accounts' },
+  { code: 'admin:read',              description: 'Read admin configuration (branches, products, GL, etc.)' },
+  { code: 'admin:config',            description: 'Write admin configuration (branches, products, GL, etc.)' },
   { code: 'admin:products',          description: 'Manage products and rate bands' },
   { code: 'admin:branding',          description: 'Upload organisation logo' },
   { code: 'admin:tax-rates',         description: 'Manage tax rates' },

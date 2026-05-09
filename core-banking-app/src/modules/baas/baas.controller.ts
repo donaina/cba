@@ -21,14 +21,14 @@ export class BaasController {
   @ApiOperation({ summary: 'Create an API key (stored as SHA-256 hash)' })
   @ApiResponse({ status: 201, description: 'API key created; raw key shown once, not stored in plaintext' })
   @Post('api-keys')
-  @RequirePermission('admin:config')
+  @RequirePermission('baas:api-keys')
   createApiKey(@Body() dto: CreateApiKeyDto) {
     return this.baasService.createApiKey(dto);
   }
 
   @ApiOperation({ summary: 'List API keys (hashed values only)' })
   @Get('api-keys')
-  @RequirePermission('admin:read')
+  @RequirePermission('baas:api-keys')
   listApiKeys() {
     return this.baasService.listApiKeys();
   }
@@ -36,7 +36,7 @@ export class BaasController {
   @ApiOperation({ summary: 'Revoke an API key' })
   @ApiParam({ name: 'id', description: 'API key UUID' })
   @Delete('api-keys/:id')
-  @RequirePermission('admin:config')
+  @RequirePermission('baas:api-keys')
   revokeApiKey(@Param('id') id: string) {
     return this.baasService.revokeApiKey(id);
   }
@@ -44,14 +44,14 @@ export class BaasController {
   @ApiOperation({ summary: 'Register a webhook endpoint (HMAC-SHA256 signed)' })
   @ApiResponse({ status: 201, description: 'Webhook endpoint registered' })
   @Post('webhooks')
-  @RequirePermission('admin:config')
+  @RequirePermission('baas:webhooks')
   createWebhook(@Body() dto: CreateWebhookDto) {
     return this.baasService.createWebhook(dto);
   }
 
   @ApiOperation({ summary: 'List registered webhook endpoints' })
   @Get('webhooks')
-  @RequirePermission('admin:read')
+  @RequirePermission('baas:webhooks')
   listWebhooks() {
     return this.baasService.listWebhooks();
   }
@@ -59,7 +59,7 @@ export class BaasController {
   @ApiOperation({ summary: 'Delete a webhook endpoint' })
   @ApiParam({ name: 'id', description: 'Webhook UUID' })
   @Delete('webhooks/:id')
-  @RequirePermission('admin:config')
+  @RequirePermission('baas:webhooks')
   deleteWebhook(@Param('id') id: string) {
     return this.baasService.deleteWebhook(id);
   }
