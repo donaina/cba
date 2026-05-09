@@ -80,6 +80,14 @@ export class AdminController {
     return this.adminService.createRateBand(productId, dto);
   }
 
+  @ApiOperation({ summary: 'List rate bands for a product' })
+  @ApiParam({ name: 'id', description: 'Product UUID' })
+  @Get('products/:id/rate-bands')
+  @RequirePermission('admin:read')
+  getRateBands(@Param('id') productId: string) {
+    return this.adminService.getRateBands(productId);
+  }
+
   // ─── Transaction Types ─────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Create a transaction type (with fee/VAT config)' })
@@ -128,6 +136,17 @@ export class AdminController {
   @RequirePermission('admin:read')
   listBranches() {
     return this.adminService.listBranches();
+  }
+
+  @ApiOperation({ summary: 'Update branch details or status' })
+  @ApiParam({ name: 'id', description: 'Branch UUID' })
+  @Patch('branches/:id')
+  @RequirePermission('admin:config')
+  updateBranch(
+    @Param('id') id: string,
+    @Body() dto: { name?: string; address?: string; isActive?: boolean },
+  ) {
+    return this.adminService.updateBranch(id, dto);
   }
 
   // ─── Maker-Checker Rules ───────────────────────────────────────────────────
