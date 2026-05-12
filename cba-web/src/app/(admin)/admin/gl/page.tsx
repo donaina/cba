@@ -247,10 +247,10 @@ export default function GlPage() {
                 tooltip="Optional. Set this to place the account in the hierarchy. Leave blank for top-level accounts."
               >
                 <Select
-                  value={createForm.watch('parentId') ?? ''}
-                  onValueChange={v => createForm.setValue('parentId', v || undefined)}
+                  value={createForm.watch('parentId') ?? '__none__'}
+                  onValueChange={v => createForm.setValue('parentId', v === '__none__' ? undefined : v)}
                 >
-                  <SelectItem value="">— None (top-level) —</SelectItem>
+                  <SelectItem value="__none__">— None (top-level) —</SelectItem>
                   {allAccounts.map(a => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.accountNumber ? `${a.accountNumber} · ` : ''}{a.name} ({a.level})
@@ -506,10 +506,10 @@ export default function GlPage() {
 
             <FormField label="Parent Account">
               <Select
-                value={editForm.watch('parentId') ?? ''}
-                onValueChange={v => editForm.setValue('parentId', v || '')}
+                value={editForm.watch('parentId') || '__none__'}
+                onValueChange={v => editForm.setValue('parentId', v === '__none__' ? '' : v)}
               >
-                <SelectItem value="">— None (top-level) —</SelectItem>
+                <SelectItem value="__none__">— None (top-level) —</SelectItem>
                 {allAccounts.filter(a => a.id !== selected.id).map(a => (
                   <SelectItem key={a.id} value={a.id}>
                     {a.accountNumber ? `${a.accountNumber} · ` : ''}{a.name} ({a.level})
