@@ -536,26 +536,27 @@ export class AuthService {
     const userRoles = await this.prisma.userRole.findMany({
       where: { userId },
       include: {
-        role: {
-          include: {
-            rolePermissions: {
-              include: { permission: true },
-            },
-          },
-        },
+        role: { select: { name: true, isActive: true, tenantId: true } },
       },
     });
 
-    const permissionSet = new Set<string>();
+    const activeRoles = userRoles.filter(
+      (ur) => ur.role.isActive && ur.role.tenantId === tenantId,
+    );
 
-    for (const ur of userRoles) {
-      if (!ur.role.isActive) continue;
-      if (ur.role.tenantId !== tenantId) continue;
-      for (const rp of ur.role.rolePermissions) {
-        permissionSet.add(rp.permission.code);
-      }
+    // SUPER_ADMIN gets every seeded permission automatically
+    const isSuperAdmin = activeRoles.some((ur) => ur.role.name === 'SUPER_ADMIN');
+    if (isSuperAdmin) {
+      const all = await this.prisma.permission.findMany({ select: { code: true } });
+      return all.map((p) => p.code);
     }
 
-    return Array.from(permissionSet);
+    const roleIds = activeRoles.map((ur) => ur.roleId);
+    const rolePerms = await this.prisma.rolePermission.findMany({
+      where: { roleId: { in: roleIds } },
+      include: { permission: { select: { code: true } } },
+    });
+
+    return [...new Set(rolePerms.map((rp) => rp.permission.code))];
   }
 }

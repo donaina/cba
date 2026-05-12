@@ -17,7 +17,7 @@ export class FixedDepositController {
   @ApiOperation({ summary: 'Open a fixed deposit account' })
   @ApiResponse({ status: 201, description: 'Fixed deposit opened, principal debited from source account' })
   @Post()
-  @RequirePermission('account:create')
+  @RequirePermission('account:open')
   openFd(@Body() dto: OpenFdDto) {
     return this.fixedDepositService.openFd(dto);
   }

@@ -20,7 +20,7 @@ export class SavingsController {
   @ApiOperation({ summary: 'Open savings account' })
   @ApiResponse({ status: 201, description: 'Account opened, NUBAN number assigned' })
   @Post()
-  @RequirePermission('account:create')
+  @RequirePermission('account:open')
   openAccount(@Body() dto: OpenSavingsDto) {
     return this.savingsService.openAccount(dto);
   }

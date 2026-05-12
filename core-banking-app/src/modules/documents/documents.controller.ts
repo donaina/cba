@@ -65,7 +65,7 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Review (approve or reject) a KYC document' })
   @ApiParam({ name: 'id', description: 'Document UUID' })
   @Patch(':id/review')
-  @RequirePermission('compliance:alert')
+  @RequirePermission('document:review')
   reviewDocument(
     @Param('id') id: string,
     @Body() dto: ReviewDocumentDto,

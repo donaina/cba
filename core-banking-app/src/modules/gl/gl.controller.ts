@@ -21,7 +21,7 @@ export class GlController {
   @ApiOperation({ summary: 'Create a GL account in the chart of accounts' })
   @ApiResponse({ status: 201, description: 'GL account created' })
   @Post('accounts')
-  @RequirePermission('gl:post')
+  @RequirePermission('gl:manage')
   createAccount(@Body() dto: CreateGlAccountDto) {
     return this.glService.createAccount(dto);
   }
@@ -44,7 +44,7 @@ export class GlController {
   @ApiOperation({ summary: 'Update a GL account' })
   @ApiParam({ name: 'id', description: 'GL account UUID' })
   @Patch('accounts/:id')
-  @RequirePermission('gl:post')
+  @RequirePermission('gl:manage')
   updateAccount(@Param('id') id: string, @Body() dto: UpdateGlAccountDto) {
     return this.glService.updateAccount(id, dto);
   }

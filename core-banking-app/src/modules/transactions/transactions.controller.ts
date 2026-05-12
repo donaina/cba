@@ -30,7 +30,7 @@ export class TransactionsController {
   @ApiHeader({ name: 'idempotency-key', required: false, description: 'Idempotency key (24-hour dedup)' })
   @ApiResponse({ status: 201, description: 'Deposit posted; VAULT_CASH debited, account credited' })
   @Post('deposit')
-  @RequirePermission('txn:deposit')
+  @RequirePermission('transaction:deposit')
   deposit(
     @Body() dto: DepositDto,
     @Headers('idempotency-key') idempotencyKey?: string,
@@ -42,7 +42,7 @@ export class TransactionsController {
   @ApiHeader({ name: 'idempotency-key', required: false, description: 'Idempotency key (24-hour dedup)' })
   @ApiResponse({ status: 201, description: 'Withdrawal posted; account debited, VAULT_CASH credited' })
   @Post('withdraw')
-  @RequirePermission('txn:withdraw')
+  @RequirePermission('transaction:withdraw')
   withdraw(
     @Body() dto: WithdrawDto,
     @Headers('idempotency-key') idempotencyKey?: string,
@@ -53,7 +53,7 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Intra-bank account-to-account transfer' })
   @ApiHeader({ name: 'idempotency-key', required: false, description: 'Idempotency key (24-hour dedup)' })
   @Post('transfer')
-  @RequirePermission('txn:transfer')
+  @RequirePermission('transaction:transfer')
   transfer(
     @Body() dto: IntraTransferDto,
     @Headers('idempotency-key') idempotencyKey?: string,
@@ -65,7 +65,7 @@ export class TransactionsController {
   @ApiHeader({ name: 'idempotency-key', required: false, description: 'Idempotency key (24-hour dedup)' })
   @ApiResponse({ status: 201, description: 'NIP transfer initiated; customer debited, NIBSS_SUSPENSE credited' })
   @Post('nip-transfer')
-  @RequirePermission('txn:transfer')
+  @RequirePermission('transaction:transfer')
   nipTransfer(
     @Body() dto: NipTransferDto,
     @Headers('idempotency-key') idempotencyKey?: string,
@@ -76,7 +76,7 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Approve a pending maker-checker transaction' })
   @ApiResponse({ status: 200, description: 'Transaction approved and executed; approver must differ from initiator' })
   @Post('approve')
-  @RequirePermission('txn:approve')
+  @RequirePermission('transaction:approve')
   async approve(@Body() dto: ApproveTransactionDto) {
     const requestId = dto.makerCheckerRequestId ?? dto.transactionId;
     const request = await this.makerCheckerService.findById(requestId!);
@@ -98,7 +98,7 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Reject a pending maker-checker transaction' })
   @ApiParam({ name: 'id', description: 'Maker-checker request UUID' })
   @Post(':id/reject')
-  @RequirePermission('txn:approve')
+  @RequirePermission('transaction:approve')
   reject(@Param('id') id: string, @Body() dto: { note: string }) {
     return this.makerCheckerService.reject(id, this.ctx.userId, dto.note);
   }
@@ -106,14 +106,14 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Reverse a posted transaction' })
   @ApiParam({ name: 'id', description: 'Transaction UUID' })
   @Post('reverse/:id')
-  @RequirePermission('txn:reverse')
+  @RequirePermission('transaction:approve')
   reverse(@Param('id') id: string) {
     return this.transactionsService.reverse(id, this.ctx.userId);
   }
 
   @ApiOperation({ summary: 'List transactions pending maker-checker approval' })
   @Get('pending-approvals')
-  @RequirePermission('txn:approve')
+  @RequirePermission('transaction:approve')
   getPendingApprovals() {
     return this.transactionsService.getPendingApprovals();
   }
@@ -121,7 +121,7 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Get transaction by ID' })
   @ApiParam({ name: 'id', description: 'Transaction UUID' })
   @Get(':id')
-  @RequirePermission('txn:deposit')
+  @RequirePermission('transaction:deposit')
   findById(@Param('id') id: string) {
     return this.transactionsService.findById(id);
   }
