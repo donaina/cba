@@ -130,6 +130,16 @@ export class AdminController {
     return this.adminService.listBranches();
   }
 
+  @ApiOperation({ summary: 'Update branch name, address or status' })
+  @Patch('branches/:id')
+  @RequirePermission('admin:config')
+  updateBranch(
+    @Param('id') id: string,
+    @Body() dto: { name?: string; address?: string; isActive?: boolean },
+  ) {
+    return this.adminService.updateBranch(id, dto);
+  }
+
   // ─── Maker-Checker Rules ───────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'List all maker-checker approval rules' })

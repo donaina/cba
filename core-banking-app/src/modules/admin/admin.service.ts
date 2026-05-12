@@ -223,6 +223,14 @@ export class AdminService {
     });
   }
 
+  async updateBranch(id: string, dto: { name?: string; address?: string; isActive?: boolean }) {
+    const existing = await this.prisma.branch.findFirst({
+      where: { id, tenantId: this.ctx.tenantId },
+    });
+    if (!existing) throw new NotFoundException('Branch not found');
+    return this.prisma.branch.update({ where: { id }, data: dto });
+  }
+
   // ─── Maker-Checker Rules ───────────────────────────────────────────────────
 
   async listMakerCheckerRules() {
