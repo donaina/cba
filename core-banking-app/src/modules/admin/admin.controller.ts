@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Param,
   Body,
   UseInterceptors,
@@ -80,6 +81,36 @@ export class AdminController {
     return this.adminService.createRateBand(productId, dto);
   }
 
+  @ApiOperation({ summary: 'List rate bands for a product' })
+  @ApiParam({ name: 'id', description: 'Product UUID' })
+  @Get('products/:id/rate-bands')
+  @RequirePermission('admin:read')
+  getRateBands(@Param('id') productId: string) {
+    return this.adminService.getRateBands(productId);
+  }
+
+  @ApiOperation({ summary: 'Update a rate band' })
+  @ApiParam({ name: 'id', description: 'Product UUID' })
+  @ApiParam({ name: 'bandId', description: 'Rate band UUID' })
+  @Patch('products/:id/rate-bands/:bandId')
+  @RequirePermission('admin:config')
+  updateRateBand(
+    @Param('bandId') bandId: string,
+    @Body() dto: CreateRateBandDto,
+  ) {
+    return this.adminService.updateRateBand(bandId, dto);
+  }
+
+  @ApiOperation({ summary: 'Delete a rate band' })
+  @ApiParam({ name: 'id', description: 'Product UUID' })
+  @ApiParam({ name: 'bandId', description: 'Rate band UUID' })
+  @Delete('products/:id/rate-bands/:bandId')
+  @RequirePermission('admin:config')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteRateBand(@Param('bandId') bandId: string) {
+    return this.adminService.deleteRateBand(bandId);
+  }
+
   // ─── Transaction Types ─────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Create a transaction type (with fee/VAT config)' })
@@ -128,6 +159,17 @@ export class AdminController {
   @RequirePermission('admin:read')
   listBranches() {
     return this.adminService.listBranches();
+  }
+
+  @ApiOperation({ summary: 'Update branch details or status' })
+  @ApiParam({ name: 'id', description: 'Branch UUID' })
+  @Patch('branches/:id')
+  @RequirePermission('admin:config')
+  updateBranch(
+    @Param('id') id: string,
+    @Body() dto: { name?: string; address?: string; isActive?: boolean },
+  ) {
+    return this.adminService.updateBranch(id, dto);
   }
 
   // ─── Maker-Checker Rules ───────────────────────────────────────────────────

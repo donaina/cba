@@ -37,6 +37,8 @@ export class AdminService {
           dto.interestRate !== undefined
             ? new Decimal(dto.interestRate)
             : undefined,
+        interestRateType: dto.interestRateType,
+        accrualFrequency: dto.accrualFrequency,
         minTenorDays: dto.minTenorDays,
         maxTenorDays: dto.maxTenorDays,
         glAccountId: dto.glAccountId,
@@ -89,6 +91,12 @@ export class AdminService {
         ...(dto.interestRate !== undefined && {
           interestRate: new Decimal(dto.interestRate),
         }),
+        ...(dto.interestRateType !== undefined && {
+          interestRateType: dto.interestRateType,
+        }),
+        ...(dto.accrualFrequency !== undefined && {
+          accrualFrequency: dto.accrualFrequency,
+        }),
         ...(dto.minTenorDays !== undefined && {
           minTenorDays: dto.minTenorDays,
         }),
@@ -119,6 +127,29 @@ export class AdminService {
       where: { tenantId: this.ctx.tenantId, productId },
       orderBy: { minAmount: 'asc' },
     });
+  }
+
+  async updateRateBand(bandId: string, dto: CreateRateBandDto) {
+    const existing = await this.prisma.rateBand.findFirst({
+      where: { id: bandId, tenantId: this.ctx.tenantId },
+    });
+    if (!existing) throw new NotFoundException('Rate band not found');
+    return this.prisma.rateBand.update({
+      where: { id: bandId },
+      data: {
+        minAmount: new Decimal(dto.minAmount),
+        maxAmount: new Decimal(dto.maxAmount),
+        rate: new Decimal(dto.rate),
+      },
+    });
+  }
+
+  async deleteRateBand(bandId: string) {
+    const existing = await this.prisma.rateBand.findFirst({
+      where: { id: bandId, tenantId: this.ctx.tenantId },
+    });
+    if (!existing) throw new NotFoundException('Rate band not found');
+    await this.prisma.rateBand.delete({ where: { id: bandId } });
   }
 
   // ─── Transaction Types ─────────────────────────────────────────────────────
@@ -221,6 +252,14 @@ export class AdminService {
       where: { tenantId: this.ctx.tenantId },
       orderBy: { name: 'asc' },
     });
+  }
+
+  async updateBranch(id: string, dto: { name?: string; address?: string; isActive?: boolean }) {
+    const existing = await this.prisma.branch.findFirst({
+      where: { id, tenantId: this.ctx.tenantId },
+    });
+    if (!existing) throw new NotFoundException('Branch not found');
+    return this.prisma.branch.update({ where: { id }, data: dto });
   }
 
   // ─── Maker-Checker Rules ───────────────────────────────────────────────────
