@@ -1,17 +1,18 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Plus, Landmark, Info } from 'lucide-react';
+import { Plus, Landmark, Info, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { ApiError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectItem } from '@/components/ui/select';
 import { Dialog, DialogTrigger, DialogContent, DialogClose } from '@/components/ui/dialog';
+import { Sheet } from '@/components/ui/sheet';
 import { FormField } from '@/components/ui/form-field';
 import { Table, Thead, Tbody, Tr, Th, Td } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,23 @@ const GL_LEVEL_LABELS: Record<string, string> = {
   HEADER: 'Header',
   SUB_HEADER: 'Sub-Header',
   DETAIL: 'Detail (postable)',
+};
+
+// Chart-of-accounts number prefix per type
+const TYPE_PREFIX: Record<string, string> = {
+  ASSET: '1',
+  LIABILITY: '2',
+  EQUITY: '3',
+  INCOME: '4',
+  EXPENSE: '5',
+};
+
+const TYPE_PREFIX_LABEL: Record<string, string> = {
+  ASSET: '1xxx',
+  LIABILITY: '2xxx',
+  EQUITY: '3xxx',
+  INCOME: '4xxx',
+  EXPENSE: '5xxx',
 };
 
 const schema = z.object({
@@ -58,9 +76,16 @@ const TYPE_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'succes
   EXPENSE: 'destructive',
 };
 
+function prefixMismatch(type: string, accountNumber: string | undefined): boolean {
+  if (!accountNumber) return false;
+  const expected = TYPE_PREFIX[type];
+  return !!expected && !accountNumber.startsWith(expected);
+}
+
 export default function GlPage() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<GlAccount | null>(null);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery<GlAccount[]>({
@@ -72,6 +97,20 @@ export default function GlPage() {
     resolver: zodResolver(schema),
     defaultValues: { type: 'ASSET', level: 'DETAIL', normalBalance: 'DEBIT' },
   });
+
+  const selectedType = watch('type');
+  const selectedLevel = watch('level');
+  const accountNumberValue = watch('accountNumber');
+
+  // Auto-fill account number prefix when type changes
+  useEffect(() => {
+    const current = accountNumberValue ?? '';
+    // Only auto-fill if field is empty or still just a single prefix digit
+    if (current === '' || Object.values(TYPE_PREFIX).includes(current)) {
+      setValue('accountNumber', TYPE_PREFIX[selectedType] ?? '');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType]);
 
   const create = useMutation({
     mutationFn: (dto: Form) => apiClient.post('/gl/accounts', dto).then(r => r.data),
@@ -94,13 +133,15 @@ export default function GlPage() {
 
   const accountById = Object.fromEntries(allAccounts.map(a => [a.id, a]));
 
-  const selectedLevel = watch('level');
-  const selectedType = watch('type');
-
   function handleOpen(val: boolean) {
     if (!val) reset();
     setOpen(val);
   }
+
+  // Children of the currently selected account
+  const children = selected
+    ? allAccounts.filter(a => a.parentId === selected.id)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -127,9 +168,15 @@ export default function GlPage() {
                 <FormField
                   label="Account Number"
                   error={errors.accountNumber?.message}
-                  tooltip="Numeric code for chart of accounts. Convention: 1xxx=Assets, 2xxx=Liabilities, 3xxx=Equity, 4xxx=Income, 5xxx=Expense."
+                  tooltip={`Numeric code for the chart of accounts. Convention: ${Object.entries(TYPE_PREFIX_LABEL).map(([t, p]) => `${p}=${t}`).join(', ')}.`}
                 >
-                  <Input placeholder="2001" {...register('accountNumber')} />
+                  <Input placeholder={TYPE_PREFIX[selectedType] + '001'} {...register('accountNumber')} />
+                  {prefixMismatch(selectedType, accountNumberValue) && (
+                    <p className="flex items-center gap-1 text-xs text-amber-600 mt-1">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      {selectedType} accounts typically start with {TYPE_PREFIX_LABEL[selectedType]}
+                    </p>
+                  )}
                 </FormField>
               </div>
 
@@ -241,7 +288,11 @@ export default function GlPage() {
               {accounts.map(a => {
                 const parent = a.parentId ? accountById[a.parentId] : null;
                 return (
-                  <Tr key={a.id}>
+                  <Tr
+                    key={a.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setSelected(a)}
+                  >
                     <Td className="font-mono text-xs text-muted-foreground w-16">
                       {a.accountNumber ?? '—'}
                     </Td>
@@ -264,9 +315,7 @@ export default function GlPage() {
                     </Td>
                     <Td className="text-xs text-muted-foreground">
                       {parent ? (
-                        <span>
-                          {parent.accountNumber ? `${parent.accountNumber} · ` : ''}{parent.name}
-                        </span>
+                        <span>{parent.accountNumber ? `${parent.accountNumber} · ` : ''}{parent.name}</span>
                       ) : '—'}
                     </Td>
                   </Tr>
@@ -276,6 +325,113 @@ export default function GlPage() {
           </Table>
         </div>
       )}
+
+      {/* Detail side panel */}
+      <Sheet
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title={selected?.code ?? ''}
+      >
+        {selected && (
+          <div className="space-y-5">
+            {/* Badges row */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={TYPE_VARIANT[selected.type]}>{selected.type}</Badge>
+              <Badge variant={selected.level === 'DETAIL' ? 'default' : 'outline'}>
+                {GL_LEVEL_LABELS[selected.level] ?? selected.level}
+              </Badge>
+              <Badge variant={selected.normalBalance === 'DEBIT' ? 'default' : 'secondary'}>
+                {selected.normalBalance}
+              </Badge>
+              {selected.isSystemAccount && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3" /> System
+                </Badge>
+              )}
+              <Badge variant={selected.isActive ? 'success' : 'destructive'}>
+                {selected.isActive ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+
+            {/* Key-value details */}
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground mb-0.5">Account Name</dt>
+                <dd className="font-medium">{selected.name}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground mb-0.5">Account Number</dt>
+                <dd className="font-mono">{selected.accountNumber ?? '—'}</dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-xs text-muted-foreground mb-0.5">Symbolic Code</dt>
+                <dd>
+                  <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
+                    {selected.code}
+                  </span>
+                </dd>
+              </div>
+              {selected.parentId && accountById[selected.parentId] && (
+                <div className="col-span-2">
+                  <dt className="text-xs text-muted-foreground mb-0.5">Reports To</dt>
+                  <dd
+                    className="text-primary underline-offset-2 hover:underline cursor-pointer text-sm"
+                    onClick={() => setSelected(accountById[selected.parentId!])}
+                  >
+                    {accountById[selected.parentId].accountNumber
+                      ? `${accountById[selected.parentId].accountNumber} · `
+                      : ''}
+                    {accountById[selected.parentId].name}
+                  </dd>
+                </div>
+              )}
+              {selected.description && (
+                <div className="col-span-2">
+                  <dt className="text-xs text-muted-foreground mb-0.5">Description</dt>
+                  <dd className="text-sm text-muted-foreground">{selected.description}</dd>
+                </div>
+              )}
+            </dl>
+
+            {/* Children */}
+            {children.length > 0 && (
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  Sub-accounts ({children.length})
+                </h3>
+                <ul className="space-y-1">
+                  {children.map(c => (
+                    <li key={c.id}>
+                      <button
+                        className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted transition-colors text-sm"
+                        onClick={() => setSelected(c)}
+                      >
+                        <span className="font-mono text-xs text-muted-foreground w-12 shrink-0">
+                          {c.accountNumber ?? '—'}
+                        </span>
+                        <span className="flex-1 truncate font-medium">{c.name}</span>
+                        <Badge variant={c.level === 'DETAIL' ? 'default' : 'outline'} className="text-xs shrink-0">
+                          {GL_LEVEL_LABELS[c.level] ?? c.level}
+                        </Badge>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {selected.level === 'DETAIL' && (
+              <div className="flex items-start gap-2 rounded-md bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-800">
+                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>
+                  This is a <strong>DETAIL</strong> account — it can receive postings via PostingEngine.
+                  Link it to a product on the <strong>Products</strong> page using the &quot;GL Account&quot; field.
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </Sheet>
     </div>
   );
 }
