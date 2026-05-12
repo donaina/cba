@@ -174,11 +174,28 @@ export class AdminController {
 
   // ─── Maker-Checker Rules ───────────────────────────────────────────────────
 
-  @ApiOperation({ summary: 'Create a maker-checker approval rule' })
+  @ApiOperation({ summary: 'List all maker-checker approval rules' })
+  @Get('maker-checker-rules')
+  @RequirePermission('admin:read')
+  listMakerCheckerRules() {
+    return this.adminService.listMakerCheckerRules();
+  }
+
+  @ApiOperation({ summary: 'Create or update a maker-checker approval rule' })
   @Post('maker-checker-rules')
   @RequirePermission('admin:config')
   createMakerCheckerRule(@Body() dto: CreateMakerCheckerRuleDto) {
     return this.adminService.createMakerCheckerRule(dto);
+  }
+
+  @ApiOperation({ summary: 'Activate or deactivate a maker-checker rule' })
+  @Patch('maker-checker-rules/:id')
+  @RequirePermission('admin:config')
+  toggleMakerCheckerRule(
+    @Param('id') id: string,
+    @Body() body: { isActive: boolean },
+  ) {
+    return this.adminService.toggleMakerCheckerRule(id, body.isActive);
   }
 
   // ─── Branding ──────────────────────────────────────────────────────────────

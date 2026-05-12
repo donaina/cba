@@ -264,6 +264,21 @@ export class AdminService {
 
   // ─── Maker-Checker Rules ───────────────────────────────────────────────────
 
+  async listMakerCheckerRules() {
+    return this.prisma.makerCheckerConfig.findMany({
+      where: { tenantId: this.ctx.tenantId },
+      orderBy: [{ module: 'asc' }, { action: 'asc' }],
+    });
+  }
+
+  async toggleMakerCheckerRule(id: string, isActive: boolean) {
+    const rule = await this.prisma.makerCheckerConfig.findFirst({
+      where: { id, tenantId: this.ctx.tenantId },
+    });
+    if (!rule) throw new NotFoundException('Rule not found');
+    return this.prisma.makerCheckerConfig.update({ where: { id }, data: { isActive } });
+  }
+
   async createMakerCheckerRule(dto: CreateMakerCheckerRuleDto) {
     return this.prisma.makerCheckerConfig.upsert({
       where: {
