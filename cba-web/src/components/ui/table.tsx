@@ -20,7 +20,7 @@ export function Tr({ children, className }: { children: React.ReactNode; classNa
   return <tr className={cn('hover:bg-muted/30 transition-colors', className)}>{children}</tr>;
 }
 
-export function Th({ children, className }: { children: React.ReactNode; className?: string }) {
+export function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
   return (
     <th className={cn('px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide', className)}>
       {children}
@@ -28,6 +28,6 @@ export function Th({ children, className }: { children: React.ReactNode; classNa
   );
 }
 
-export function Td({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <td className={cn('px-4 py-3 text-foreground', className)}>{children}</td>;
+export function Td({ children, className, colSpan }: { children?: React.ReactNode; className?: string; colSpan?: number }) {
+  return <td colSpan={colSpan} className={cn('px-4 py-3 text-foreground', className)}>{children}</td>;
 }

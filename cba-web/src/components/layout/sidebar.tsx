@@ -18,6 +18,8 @@ import {
   FolderOpen,
   ScrollText,
   ScanLine,
+  UserCog,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
@@ -52,6 +54,8 @@ const ADMIN_NAV: NavItem[] = [
   { label: 'Tax Rates',     href: '/admin/tax-rates',     icon: FileText },
   { label: 'Txn Types',     href: '/admin/txn-types',     icon: ArrowLeftRight },
   { label: 'Maker-Checker', href: '/admin/maker-checker', icon: Shield },
+  { label: 'Roles',         href: '/admin/roles',         icon: ShieldCheck, permission: 'role:manage' },
+  { label: 'Staff Users',   href: '/admin/users',         icon: UserCog,     permission: 'user:read' },
   { label: 'API Keys',      href: '/admin/api-keys',      icon: Key },
   { label: 'Webhooks',      href: '/admin/webhooks',      icon: Webhook },
   { label: 'Branding',      href: '/admin/branding',      icon: Settings },

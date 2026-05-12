@@ -7,7 +7,7 @@ export const Dialog = RadixDialog.Root;
 export const DialogTrigger = RadixDialog.Trigger;
 
 interface DialogContentProps {
-  title: string;
+  title?: string;
   description?: string;
   children: React.ReactNode;
   className?: string;
@@ -27,9 +27,11 @@ export function DialogContent({ title, description, children, className }: Dialo
       >
         <div className="flex items-start justify-between mb-4">
           <div>
-            <RadixDialog.Title className="text-base font-semibold text-foreground">
-              {title}
-            </RadixDialog.Title>
+            {title && (
+              <RadixDialog.Title className="text-base font-semibold text-foreground">
+                {title}
+              </RadixDialog.Title>
+            )}
             {description && (
               <RadixDialog.Description className="text-sm text-muted-foreground mt-0.5">
                 {description}
