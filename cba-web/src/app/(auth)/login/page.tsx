@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/auth-provider';
 import { ApiError } from '@/lib/api-client';
+import { getDefaultRoute } from '@/lib/auth';
 
 const loginSchema = z.object({
   tenantCode: z.string().min(1, 'Tenant code is required'),
@@ -21,7 +22,6 @@ export default function LoginPage() {
   const { signIn } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') ?? '/ops/dashboard';
   const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
@@ -31,8 +31,14 @@ export default function LoginPage() {
   async function onSubmit(data: LoginForm) {
     setIsLoading(true);
     try {
-      await signIn(data);
-      router.replace(redirectTo);
+      const user = await signIn(data);
+      const defaultRoute = getDefaultRoute(user);
+      // Honour an explicit ?redirect= only if it points to the user's own portal
+      const requested = searchParams.get('redirect');
+      const destination = requested && requested.startsWith(defaultRoute.split('/').slice(0, 2).join('/'))
+        ? requested
+        : defaultRoute;
+      router.replace(destination);
     } catch (err) {
       if (err instanceof ApiError) {
         toast.error(err.message);

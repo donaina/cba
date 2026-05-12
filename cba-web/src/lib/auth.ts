@@ -137,3 +137,12 @@ export function hasRole(user: AuthUser | null, ...roles: string[]): boolean {
   // Roles are resolved as permissions in this backend — check permissions instead
   return roles.some((role) => user?.permissions?.includes(role));
 }
+
+/**
+ * Returns the home dashboard route for a given user.
+ * SUPER_ADMIN (identified by admin:config permission) → /admin/dashboard
+ * Everyone else → /ops/dashboard
+ */
+export function getDefaultRoute(user: AuthUser | null): string {
+  return hasPermission(user, 'admin:config') ? '/admin/dashboard' : '/ops/dashboard';
+}

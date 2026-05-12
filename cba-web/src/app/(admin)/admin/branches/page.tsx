@@ -30,18 +30,9 @@ const editSchema = z.object({
 });
 type EditForm = z.infer<typeof editSchema>;
 
-interface Branch {
-  id: string;
-  name: string;
-  code: string;
-  address: string | null;
-  branchType: string;
-  isActive: boolean;
-}
-
 export default function BranchesPage() {
   const [createOpen, setCreateOpen] = useState(false);
-  const [editBranch, setEditBranch] = useState<Branch | null>(null);
+  const [editBranch, setEditBranch] = useState<any | null>(null);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery<Branch[]>({
@@ -64,7 +55,7 @@ export default function BranchesPage() {
       createForm.reset();
       setCreateOpen(false);
     },
-    onError: (e: ApiError) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const update = useMutation({
@@ -75,7 +66,7 @@ export default function BranchesPage() {
       toast.success('Branch updated');
       setEditBranch(null);
     },
-    onError: (e: ApiError) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const toggleStatus = useMutation({
@@ -85,10 +76,10 @@ export default function BranchesPage() {
       qc.invalidateQueries({ queryKey: ['admin', 'branches'] });
       toast.success(vars.isActive ? 'Branch reopened' : 'Branch closed');
     },
-    onError: (e: ApiError) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
-  function openEdit(b: Branch) {
+  function openEdit(b: any) {
     setEditBranch(b);
     editForm.reset({ name: b.name, address: b.address ?? '' });
   }
@@ -127,22 +118,17 @@ export default function BranchesPage() {
               <FormField
                 label="Branch Type"
                 required
-                tooltip="HEAD OFFICE: the primary branch — only one per tenant. BRANCH: a standard branch. AGENCY: a limited-service agent location."
+                tooltip="HEAD OFFICE: the primary branch — only one allowed per tenant. BRANCH: a standard branch. AGENCY: a limited-service agent location."
               >
-                <Select
-                  value={createForm.watch('branchType')}
-                  onValueChange={v => createForm.setValue('branchType', v as CreateForm['branchType'])}
-                >
+                <Select value={createForm.watch('branchType')} onValueChange={v => createForm.setValue('branchType', v as any)}>
                   <SelectItem value="HEAD_OFFICE">Head Office</SelectItem>
                   <SelectItem value="BRANCH">Branch</SelectItem>
                   <SelectItem value="AGENCY">Agency</SelectItem>
                 </Select>
               </FormField>
               <div className="flex justify-end gap-2 pt-2">
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button type="submit" disabled={create.isPending}>
+                <DialogClose asChild><Button type="button" variant="outline" size="sm">Cancel</Button></DialogClose>
+                <Button type="submit" size="sm" disabled={create.isPending}>
                   {create.isPending ? 'Creating…' : 'Create Branch'}
                 </Button>
               </div>
@@ -154,10 +140,7 @@ export default function BranchesPage() {
       {/* Edit dialog */}
       <Dialog open={!!editBranch} onOpenChange={open => { if (!open) setEditBranch(null); }}>
         <DialogContent title="Edit Branch">
-          <form
-            onSubmit={editForm.handleSubmit(d => update.mutate({ id: editBranch!.id, dto: d }))}
-            className="space-y-4"
-          >
+          <form onSubmit={editForm.handleSubmit(d => update.mutate({ id: editBranch.id, dto: d }))} className="space-y-4">
             <FormField label="Branch Name" error={editForm.formState.errors.name?.message} required>
               <Input {...editForm.register('name')} />
             </FormField>
@@ -165,8 +148,8 @@ export default function BranchesPage() {
               <Input {...editForm.register('address')} />
             </FormField>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setEditBranch(null)}>Cancel</Button>
-              <Button type="submit" disabled={update.isPending}>
+              <Button type="button" variant="outline" size="sm" onClick={() => setEditBranch(null)}>Cancel</Button>
+              <Button type="submit" size="sm" disabled={update.isPending}>
                 {update.isPending ? 'Saving…' : 'Save Changes'}
               </Button>
             </div>
@@ -174,24 +157,48 @@ export default function BranchesPage() {
         </DialogContent>
       </Dialog>
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : branches.length === 0 ? (
+      {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : branches.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
           <Building2 className="h-8 w-8" />
           <p className="text-sm">No branches yet. Add one to get started.</p>
         </div>
       ) : (
-        <div className="rounded-lg border border-border overflow-hidden">
-          <Table>
-            <Thead>
-              <Tr>
-                <Th>Name</Th>
-                <Th>Code</Th>
-                <Th>Type</Th>
-                <Th>Address</Th>
-                <Th>Status</Th>
-                <Th></Th>
+        <Table>
+          <Thead>
+            <Tr><Th>Name</Th><Th>Code</Th><Th>Type</Th><Th>Address</Th><Th>Status</Th><Th></Th></Tr>
+          </Thead>
+          <Tbody>
+            {branches.map((b: any) => (
+              <Tr key={b.id}>
+                <Td className="font-medium">{b.name}</Td>
+                <Td><span className="font-mono text-xs">{b.code}</span></Td>
+                <Td>
+                  <Badge variant={b.branchType === 'HEAD_OFFICE' ? 'default' : 'secondary'}>
+                    {b.branchType?.replace('_', ' ')}
+                  </Badge>
+                </Td>
+                <Td className="text-muted-foreground">{b.address ?? '—'}</Td>
+                <Td>
+                  <Badge variant={b.isActive ? 'success' : 'destructive'}>
+                    {b.isActive ? 'Active' : 'Closed'}
+                  </Badge>
+                </Td>
+                <Td>
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(b)} title="Edit branch">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={b.isActive ? 'text-destructive hover:bg-destructive/10' : 'text-green-600 hover:bg-green-50'}
+                      onClick={() => toggleStatus.mutate({ id: b.id, isActive: !b.isActive })}
+                      disabled={toggleStatus.isPending}
+                    >
+                      {b.isActive ? 'Close' : 'Reopen'}
+                    </Button>
+                  </div>
+                </Td>
               </Tr>
             </Thead>
             <Tbody>

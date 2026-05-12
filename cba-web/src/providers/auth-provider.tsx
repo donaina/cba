@@ -19,7 +19,7 @@ import {
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
-  signIn: (payload: LoginPayload) => Promise<void>;
+  signIn: (payload: LoginPayload) => Promise<AuthUser>;
   signOut: () => Promise<void>;
   hasPermission: (permission: string) => boolean;
   hasRole: (...roles: string[]) => boolean;
@@ -37,9 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const signIn = useCallback(async (payload: LoginPayload) => {
+  const signIn = useCallback(async (payload: LoginPayload): Promise<AuthUser> => {
     const authUser = await login(payload);
     setUser(authUser);
+    return authUser;
   }, []);
 
   const signOut = useCallback(async () => {
