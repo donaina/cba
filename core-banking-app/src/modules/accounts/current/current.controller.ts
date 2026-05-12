@@ -22,7 +22,7 @@ export class CurrentController {
   @ApiOperation({ summary: 'Open current account' })
   @ApiResponse({ status: 201, description: 'Account opened, NUBAN number assigned' })
   @Post()
-  @RequirePermission('account:create')
+  @RequirePermission('account:open')
   openAccount(@Body() dto: OpenCurrentDto) {
     return this.currentService.openAccount(dto);
   }
@@ -65,7 +65,7 @@ export class CurrentController {
   @ApiOperation({ summary: 'Create overdraft facility on a current account' })
   @ApiResponse({ status: 201, description: 'Overdraft facility created' })
   @Post('overdraft')
-  @RequirePermission('account:create')
+  @RequirePermission('account:open')
   createOverdraft(@Body() dto: CreateOverdraftDto) {
     return this.currentService.createOverdraftFacility(dto);
   }
@@ -73,7 +73,7 @@ export class CurrentController {
   @ApiOperation({ summary: 'Issue cheque book for a current account' })
   @ApiResponse({ status: 201, description: 'Cheque book issued' })
   @Post('chequebooks')
-  @RequirePermission('account:create')
+  @RequirePermission('account:open')
   issueChequeBook(@Body() dto: IssueChequeBookDto) {
     return this.currentService.issueChequeBook(dto);
   }

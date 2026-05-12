@@ -27,7 +27,7 @@ export class NibssController {
   @ApiQuery({ name: 'bankCode', description: '3-digit CBN bank code' })
   @ApiResponse({ status: 200, description: 'Account name returned from NIBSS' })
   @Get('name-enquiry')
-  @RequirePermission('txn:transfer')
+  @RequirePermission('transaction:nip')
   nameEnquiry(@Query() query: NameEnquiryDto) {
     return this.nibssService.nameEnquiry(query.accountNumber, query.bankCode);
   }

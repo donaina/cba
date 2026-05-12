@@ -76,7 +76,7 @@ export class LoansController {
   @ApiOperation({ summary: 'Make a loan repayment (waterfall: penalty → interest → principal)' })
   @ApiParam({ name: 'id', description: 'Loan UUID' })
   @Post(':id/repay')
-  @RequirePermission('txn:transfer')
+  @RequirePermission('loan:repay')
   repay(@Param('id') id: string, @Body() dto: RepayLoanDto) {
     return this.loansService.repay(id, dto);
   }

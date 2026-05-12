@@ -34,7 +34,7 @@ export class KycController {
   @ApiOperation({ summary: 'Get stored credit reports for a customer' })
   @ApiParam({ name: 'customerId', description: 'Customer UUID' })
   @Get('credit-report/:customerId')
-  @RequirePermission('loan:read')
+  @RequirePermission('kyc:credit-check')
   getCreditReport(@Param('customerId') customerId: string) {
     return this.creditBureauService.getCreditReports(customerId);
   }
