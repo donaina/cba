@@ -11,10 +11,12 @@ import { TenantContext, JwtPayload, sha256, generateRefreshToken, generateOtp } 
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { CreateRoleDto } from './dto/create-role.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { User, Role } from '@prisma/client';
+import { User, Role, Permission } from '@prisma/client';
 
 const BCRYPT_ROUNDS = 12;
 const REFRESH_TOKEN_TTL_DAYS = 7;
@@ -348,6 +350,181 @@ export class AuthService {
     }
 
     return role;
+  }
+
+  // ── List users ───────────────────────────────────────────────────────────
+
+  async listUsers(tenantId: string) {
+    return this.prisma.user.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        isActive: true,
+        lastLoginAt: true,
+        createdAt: true,
+        userRoles: {
+          include: { role: { select: { id: true, name: true, isActive: true } } },
+        },
+        branchAccess: {
+          include: { branch: { select: { id: true, name: true } } },
+        },
+      },
+    });
+  }
+
+  // ── Get user ─────────────────────────────────────────────────────────────
+
+  async getUser(id: string, tenantId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, tenantId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        isActive: true,
+        mustChangePassword: true,
+        lastLoginAt: true,
+        createdAt: true,
+        userRoles: {
+          include: { role: { select: { id: true, name: true, isActive: true } } },
+        },
+        branchAccess: {
+          include: { branch: { select: { id: true, name: true } } },
+        },
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  // ── Update user ──────────────────────────────────────────────────────────
+
+  async updateUser(id: string, dto: UpdateUserDto, tenantId: string) {
+    const user = await this.prisma.user.findFirst({ where: { id, tenantId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const { branchId, ...userFields } = dto;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.user.update({
+        where: { id },
+        data: { ...userFields },
+      });
+
+      if (branchId !== undefined) {
+        await tx.userBranchAccess.deleteMany({ where: { userId: id } });
+        if (branchId) {
+          await tx.userBranchAccess.create({
+            data: { userId: id, branchId, allBranches: false, canApprove: false },
+          });
+        }
+      }
+
+      return result;
+    });
+
+    return updated;
+  }
+
+  // ── Assign role ──────────────────────────────────────────────────────────
+
+  async assignRole(userId: string, roleId: string, tenantId: string): Promise<void> {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, tenantId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const role = await this.prisma.role.findFirst({ where: { id: roleId, tenantId } });
+    if (!role) throw new NotFoundException('Role not found');
+
+    await this.prisma.userRole.upsert({
+      where: { userId_roleId: { userId, roleId } },
+      create: { userId, roleId },
+      update: {},
+    });
+  }
+
+  // ── Remove role ──────────────────────────────────────────────────────────
+
+  async removeRole(userId: string, roleId: string, tenantId: string): Promise<void> {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, tenantId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    await this.prisma.userRole.deleteMany({ where: { userId, roleId } });
+  }
+
+  // ── List roles ───────────────────────────────────────────────────────────
+
+  async listRoles(tenantId: string) {
+    return this.prisma.role.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: { select: { rolePermissions: true, userRoles: true } },
+      },
+    });
+  }
+
+  // ── Get role ─────────────────────────────────────────────────────────────
+
+  async getRole(id: string, tenantId: string) {
+    const role = await this.prisma.role.findFirst({
+      where: { id, tenantId },
+      include: {
+        rolePermissions: {
+          include: { permission: true },
+        },
+        _count: { select: { userRoles: true } },
+      },
+    });
+    if (!role) throw new NotFoundException('Role not found');
+    return role;
+  }
+
+  // ── Update role ──────────────────────────────────────────────────────────
+
+  async updateRole(id: string, dto: UpdateRoleDto, tenantId: string) {
+    const role = await this.prisma.role.findFirst({ where: { id, tenantId } });
+    if (!role) throw new NotFoundException('Role not found');
+
+    const { permissionCodes, ...roleFields } = dto;
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.role.update({ where: { id }, data: { ...roleFields } });
+
+      if (permissionCodes !== undefined) {
+        // Validate all codes exist
+        const permissions = await tx.permission.findMany({
+          where: { code: { in: permissionCodes } },
+        });
+        const foundCodes = permissions.map((p) => p.code);
+        const missing = permissionCodes.filter((c) => !foundCodes.includes(c));
+        if (missing.length > 0) {
+          throw new BadRequestException(`Unknown permission codes: ${missing.join(', ')}`);
+        }
+
+        // Replace permissions
+        await tx.rolePermission.deleteMany({ where: { roleId: id } });
+        if (permissions.length > 0) {
+          await tx.rolePermission.createMany({
+            data: permissions.map((p) => ({ roleId: id, permissionId: p.id })),
+          });
+        }
+      }
+
+      return updated;
+    });
+  }
+
+  // ── List permissions ─────────────────────────────────────────────────────
+
+  async listPermissions(): Promise<Permission[]> {
+    return this.prisma.permission.findMany({ orderBy: { code: 'asc' } });
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────

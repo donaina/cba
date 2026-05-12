@@ -30,9 +30,8 @@ export function Header({ title }: HeaderProps) {
       <div className="flex items-center gap-4">
         <div className="text-right">
           <p className="text-sm font-medium text-foreground leading-none">
-            {user?.firstName} {user?.lastName}
+            {user?.email}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">{user?.email}</p>
         </div>
 
         <button
