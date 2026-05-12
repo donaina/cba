@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { Plus, Building2, Pencil } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { ApiError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectItem } from '@/components/ui/select';
@@ -34,7 +35,7 @@ export default function BranchesPage() {
   const [editBranch, setEditBranch] = useState<any | null>(null);
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<Branch[]>({
     queryKey: ['admin', 'branches'],
     queryFn: () => apiClient.get('/admin/branches').then(r => r.data),
   });
@@ -89,12 +90,14 @@ export default function BranchesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Branches</h2>
-          <p className="text-sm text-muted-foreground">{branches.length} branch{branches.length !== 1 ? 'es' : ''}</p>
+          <h1 className="text-2xl font-bold text-foreground">Branches</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {branches.length} branch{branches.length !== 1 ? 'es' : ''}
+          </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4" />Add Branch</Button>
+            <Button><Plus className="h-4 w-4" />Add Branch</Button>
           </DialogTrigger>
           <DialogContent title="Create Branch">
             <form onSubmit={createForm.handleSubmit(d => create.mutate(d))} className="space-y-4">
@@ -156,7 +159,8 @@ export default function BranchesPage() {
 
       {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : branches.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
-          <Building2 className="h-8 w-8" /><p className="text-sm">No branches yet.</p>
+          <Building2 className="h-8 w-8" />
+          <p className="text-sm">No branches yet. Add one to get started.</p>
         </div>
       ) : (
         <Table>
@@ -196,9 +200,50 @@ export default function BranchesPage() {
                   </div>
                 </Td>
               </Tr>
-            ))}
-          </Tbody>
-        </Table>
+            </Thead>
+            <Tbody>
+              {branches.map(b => (
+                <Tr key={b.id}>
+                  <Td className="font-medium">{b.name}</Td>
+                  <Td><span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{b.code}</span></Td>
+                  <Td>
+                    <Badge variant={b.branchType === 'HEAD_OFFICE' ? 'default' : 'secondary'}>
+                      {b.branchType?.replace(/_/g, ' ')}
+                    </Badge>
+                  </Td>
+                  <Td className="text-sm text-muted-foreground">{b.address ?? '—'}</Td>
+                  <Td>
+                    <Badge variant={b.isActive ? 'success' : 'destructive'}>
+                      {b.isActive ? 'Active' : 'Closed'}
+                    </Badge>
+                  </Td>
+                  <Td>
+                    <div className="flex items-center gap-1 justify-end">
+                      <button
+                        onClick={() => openEdit(b)}
+                        className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        title="Edit branch"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => toggleStatus.mutate({ id: b.id, isActive: !b.isActive })}
+                        disabled={toggleStatus.isPending}
+                        className={`text-xs px-2 py-1 rounded border transition-colors ${
+                          b.isActive
+                            ? 'border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground'
+                            : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white'
+                        }`}
+                      >
+                        {b.isActive ? 'Close' : 'Reopen'}
+                      </button>
+                    </div>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </div>
       )}
     </div>
   );
