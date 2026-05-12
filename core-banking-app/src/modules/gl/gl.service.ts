@@ -80,6 +80,7 @@ export class GlService {
       data: {
         tenantId: this.ctx.tenantId,
         code: dto.code,
+        accountNumber: dto.accountNumber ?? null,
         name: dto.name,
         type: dto.type,
         level: dto.level,
@@ -117,6 +118,7 @@ export class GlService {
       where: { id, tenantId: existing.tenantId },
       data: {
         ...(dto.code !== undefined && { code: dto.code }),
+        ...(dto.accountNumber !== undefined && { accountNumber: dto.accountNumber }),
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.level !== undefined && { level: dto.level }),

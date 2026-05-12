@@ -54,6 +54,7 @@ model GLAccount {
   id             String         @id @default(uuid())
   tenantId       String
   code           String
+  accountNumber  String?        // numeric GL code, e.g. "1001" (unique per tenant when set)
   name           String
   type           GlAccountType
   level          GlAccountLevel

@@ -13,10 +13,15 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateGlAccountDto {
-  @ApiProperty({ example: 'SAVINGS_CONTROL', description: 'Unique GL account code' })
+  @ApiProperty({ example: 'SAVINGS_CONTROL', description: 'Unique symbolic GL code used by PostingEngine' })
   @IsString()
   @IsNotEmpty()
   code: string;
+
+  @ApiPropertyOptional({ example: '2001', description: 'Numeric GL account number for chart of accounts (1xxx=Assets, 2xxx=Liabilities, 3xxx=Equity, 4xxx=Income, 5xxx=Expense)' })
+  @IsOptional()
+  @IsString()
+  accountNumber?: string;
 
   @ApiProperty({ example: 'Savings Control Account', description: 'Human-readable account name' })
   @IsString()
